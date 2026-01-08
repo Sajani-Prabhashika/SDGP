@@ -8,7 +8,7 @@ import ScanScreen from './src/screens/ScanScreen';
 
 const Stack = createNativeStackNavigator();
 
-function App(): React.JSX.Element {
+function App() {
   return (
     <NavigationContainer>
       <Stack.Navigator screenOptions={{ headerShown: false }}>
