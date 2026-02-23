@@ -36,7 +36,7 @@ const OtpScreen: React.FC = () => {
 
         <Text style={styles.resendText}>Didn't receive code ?</Text>
         <Text style={styles.timerText}>
-          <Text style={styles.resendLink}>Resend</Text>  - 00 : 36
+          <Text style={styles.resendLink}>Resend</Text>  - 00 : 59
         </Text>
       </View>
     </SafeAreaView>
