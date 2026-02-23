@@ -48,5 +48,43 @@ export default function App() {
     }
   };
 
-  return <SafeAreaView style={{flex: 1}}></SafeAreaView>; 
+  return (
+    <SafeAreaView style={styles.container}>
+      <View style={styles.header}><Text style={styles.headerTitle}>Teera AI 🌿</Text></View>
+      <FlatList
+        ref={flatListRef}
+        data={messages}
+        inverted
+        keyExtractor={(item) => item.id}
+        renderItem={({ item }) => (
+          <View style={[styles.bubble, item.role === 'user' ? styles.userBubble : styles.aiBubble]}>
+            <Text style={item.role === 'user' ? styles.userText : styles.aiText}>{item.content}</Text>
+          </View>
+        )}
+      />
+      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+        <View style={styles.inputContainer}>
+          <TextInput style={styles.input} value={inputText} onChangeText={setInputText} multiline />
+          <TouchableOpacity style={styles.sendButton} onPress={sendMessage} disabled={loading}>
+            {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.sendButtonText}>Send</Text>}
+          </TouchableOpacity>
+        </View>
+      </KeyboardAvoidingView>
+    </SafeAreaView>
+  );
 }
+
+const styles = StyleSheet.create({
+  container: { flex: 1, backgroundColor: '#F7F9FB' },
+  header: { padding: 16, backgroundColor: '#1B5E20', alignItems: 'center' },
+  headerTitle: { color: '#fff', fontSize: 20, fontWeight: 'bold' },
+  bubble: { marginVertical: 6, marginHorizontal: 12, padding: 12, borderRadius: 18, maxWidth: '85%' },
+  userBubble: { alignSelf: 'flex-end', backgroundColor: '#1B5E20' },
+  aiBubble: { alignSelf: 'flex-start', backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: '#E0E0E0' },
+  userText: { color: '#fff' },
+  aiText: { color: '#333' },
+  inputContainer: { flexDirection: 'row', padding: 12, backgroundColor: '#fff', alignItems: 'center' },
+  input: { flex: 1, backgroundColor: '#3e8eb6', borderRadius: 20, paddingHorizontal: 16 },
+  sendButton: { backgroundColor: '#1B5E20', padding: 10, borderRadius: 20 },
+  sendButtonText: { color: '#fff', fontWeight: 'bold' },
+});
