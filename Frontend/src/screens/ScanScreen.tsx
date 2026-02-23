@@ -77,8 +77,8 @@ export default function ScanScreen() {
         const resultText = LABELS[maxIndex] || "Unknown";
         const resultConf = Math.round(maxScore * 100);
 
-        Worklets.runOnJS(() => setPrediction(resultText));
-        Worklets.runOnJS(() => setConfidence(resultConf));
+        Worklets.runOnJS(setPrediction)(resultText);
+        Worklets.runOnJS(setConfidence)(resultConf);
       }
     });
   }, [model]);
