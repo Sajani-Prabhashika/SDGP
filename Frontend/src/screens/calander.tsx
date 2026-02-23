@@ -43,11 +43,11 @@ export default function CalendarScreen() {
 
   const handleSaveReminder = () => {
     if (!selectedDate) {
-      Alert.alert("Error", "Please select a date on the calendar.");
+      Alert.alert("Error", "Please select a date.");
       return;
     }
     if (!remName.trim()) {
-      Alert.alert("Error", "Please enter a reminder name.");
+      Alert.alert("Error", "Please enter a reminder Title.");
       return;
     }
 
