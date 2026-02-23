@@ -20,7 +20,7 @@ export default function HomeScreen() {
         style={styles.button} 
         onPress={() => navigation.navigate('Scan')}
       >
-        <Text style={styles.buttonText}>📷 Scan Plant</Text>
+        <Text style={styles.buttonText}> Scan Plant</Text>
       </TouchableOpacity>
     </View>
   );
