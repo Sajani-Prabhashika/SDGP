@@ -167,7 +167,7 @@ const styles = StyleSheet.create({
     borderColor: "#81C784",
     marginBottom: 10,
   },
-  textArea: { height: 80, textAlignVertical: 'top' },
+  textArea: { height: 70, textAlignVertical: 'top' },
   button: {
     backgroundColor: "#407B60", 
     paddingVertical: 14,
