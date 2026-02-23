@@ -154,7 +154,7 @@ const styles = StyleSheet.create({
   cameraContainer: { flex: 1, alignItems: 'center', paddingTop: 20 } as ViewStyle,
   cameraHeader: { marginBottom: 20 } as ViewStyle,
   cameraHeaderText: { fontSize: 20, fontWeight: 'bold' } as TextStyle,
-  cameraBox: { width: '80%', height: '90%', borderRadius: 20, overflow: 'hidden', backgroundColor: 'black' } as ViewStyle,
+  cameraBox: { width: 300, height: '90%', borderRadius: 20, overflow: 'hidden', backgroundColor: 'black' } as ViewStyle,
   cameraBottomRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-around', width: '100%', marginTop: 20 } as ViewStyle,
   smallButton: { width: 50, height: 50, borderRadius: 25, backgroundColor: '#EEE', justifyContent: 'center', alignItems: 'center' } as ViewStyle,
   permissionButton: { padding: 15, backgroundColor: 'green', borderRadius: 10 } as ViewStyle,
