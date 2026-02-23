@@ -148,8 +148,8 @@ const styles = StyleSheet.create({
   subtitle: { fontSize: 14, color: "#666" },
   calendarWrapper: {
     width: width - 40,
-    borderRadius: 12,
-    borderWidth: 1,
+    borderRadius: 10,
+    borderWidth: 2,
     borderColor: "#81C784",
     overflow: 'hidden',
     backgroundColor: '#fff',
