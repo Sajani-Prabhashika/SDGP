@@ -5,22 +5,21 @@ import {
   View, 
   TextInput, 
   TouchableOpacity, 
-  SafeAreaView,
+  SafeAreaView, 
   StatusBar 
 } from 'react-native';
 
-// This is a Functional Component written in TypeScript (TSX)
-const App: React.FC = () => {
-  // 'useState' stores what the user types
+const LoginPage: React.FC = () => {
   const [username, setUsername] = useState<string>('');
   const [password, setPassword] = useState<string>('');
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* This makes the status bar (clock/battery) look nice */}
       <StatusBar barStyle="dark-content" />
-
-      <Text style={styles.logoText}>Teera</Text>
+      
+      <View style={styles.logoContainer}>
+        <Text style={styles.logoText}>Teera</Text>
+      </View>
 
       <View style={styles.card}>
         <Text style={styles.cardTitle}>Sign in with email.</Text>
@@ -28,6 +27,7 @@ const App: React.FC = () => {
         <TextInput
           style={styles.input}
           placeholder="Username"
+          placeholderTextColor="#94bb99"
           value={username}
           onChangeText={(text) => setUsername(text)}
         />
@@ -35,7 +35,8 @@ const App: React.FC = () => {
         <TextInput
           style={styles.input}
           placeholder="Password"
-          secureTextEntry={true} // Hides the password dots
+          placeholderTextColor="#7A9A7E"
+          secureTextEntry={true} 
           value={password}
           onChangeText={(text) => setPassword(text)}
         />
@@ -51,15 +52,18 @@ const App: React.FC = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: '#FFFFFF',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  logoText: {
-    fontSize: 50,
-    color: '#345E41',
+  logoContainer: {
     marginBottom: 40,
+  },
+  logoText: {
+    fontSize: 55,
+    color: '#345E41',
     fontWeight: '300',
+    fontStyle: 'italic',
   },
   card: {
     backgroundColor: '#F0FEE3',
@@ -67,16 +71,17 @@ const styles = StyleSheet.create({
     padding: 25,
     borderRadius: 20,
     alignItems: 'center',
+    elevation: 4, // Android වල පෙනෙන shadow එක
   },
   cardTitle: {
     fontSize: 16,
+    color: '#000',
     marginBottom: 20,
-    color: '#333',
   },
   input: {
-    backgroundColor: '#fff',
+    backgroundColor: '#FFFFFF',
     width: '100%',
-    height: 50,
+    height: 48,
     borderRadius: 10,
     paddingHorizontal: 15,
     marginBottom: 15,
@@ -91,10 +96,9 @@ const styles = StyleSheet.create({
     marginTop: 10,
   },
   buttonText: {
-    color: '#fff',
-    fontSize: 16,
+    color: '#FFFFFF',
     fontWeight: 'bold',
   },
 });
 
-export default App;
+export default LoginPage;
