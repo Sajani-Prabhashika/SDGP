@@ -17,7 +17,7 @@ import { OpenRouter } from '@openrouter/sdk';
 
 // 2. Initialize OpenRouter (Removed defaultHeaders to fix TS error)
 // Replace this string with your actual sk-or-v1-... key
-const OPENROUTER_API_KEY = 'YOUR_ACTUAL_OPENROUTER_API_KEY_HERE';
+const OPENROUTER_API_KEY = 'AIzaSyDjBIwuscn8X5S--r3RvHprliAoRR0oJq4';
 
 const openRouter = new OpenRouter({
   apiKey: OPENROUTER_API_KEY,
