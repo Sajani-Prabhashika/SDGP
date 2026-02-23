@@ -70,7 +70,7 @@ export default function App() {
       const aiMsg: Message = {
         id: (Date.now() + 1).toString(),
         role: 'assistant',
-        content: aiResponse || 'I am sorry, I received an empty response.',
+        content: aiResponse || 'I am sorry, empty resoponses are invalid.',
       };
 
       setMessages((prev) => [aiMsg, ...prev]);
