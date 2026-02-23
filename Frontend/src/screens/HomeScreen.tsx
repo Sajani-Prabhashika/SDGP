@@ -20,7 +20,7 @@ export default function HomeScreen() {
         style={styles.button} 
         onPress={() => navigation.navigate('Scan')}
       >
-        <Text style={styles.buttonText}>📷 Scan Plant</Text>
+        <Text style={styles.buttonText}>📷 Scan Your Plant Now</Text>
       </TouchableOpacity>
     </View>
   );
@@ -28,10 +28,10 @@ export default function HomeScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#f0fdf4', alignItems: 'center', justifyContent: 'center', padding: 20 },
-  title: { fontSize: 40, fontWeight: 'bold', color: '#166534', marginBottom: 10 },
+  title: { fontSize: 40, fontWeight: 'bold', color: '#1fbf5c', marginBottom: 10 },
   subtitle: { fontSize: 18, color: '#15803d', marginBottom: 40 },
   card: { backgroundColor: 'white', padding: 20, borderRadius: 15, width: '100%', marginBottom: 40, elevation: 2 },
   instruction: { fontSize: 16, color: '#374151', textAlign: 'center', lineHeight: 24 },
   button: { backgroundColor: '#166534', paddingVertical: 15, paddingHorizontal: 40, borderRadius: 30, elevation: 5 },
-  buttonText: { color: 'white', fontSize: 18, fontWeight: 'bold' }
+  buttonText: { color: 'white', fontSize: 16, fontWeight: 'bold' }
 });
