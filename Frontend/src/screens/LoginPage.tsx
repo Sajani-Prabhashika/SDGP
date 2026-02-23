@@ -52,7 +52,7 @@ const LoginPage: React.FC = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#a5bb72',
     alignItems: 'center',
     justifyContent: 'center',
   },
