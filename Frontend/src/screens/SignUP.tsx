@@ -23,11 +23,11 @@ export default function SignupScreen({ navigation }) {
     }
 
     if (password !== confirmPassword) {
-      Alert.alert("Error", "Passwords do not match");
+      Alert.alert("Error", "Passwords are not matching");
       return;
     }
 
-    Alert.alert("Success", "Account created (demo)");
+    Alert.alert("Success", "Account created Successfully (demo)");
   };
 
   return (
