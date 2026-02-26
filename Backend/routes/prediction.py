@@ -3,8 +3,9 @@ from services.model_service import predict_disease
 
 prediction_bp = Blueprint("prediction", __name__)
 
+#Get the scanned image and giving an output
 @prediction_bp.route("/", methods=["POST"])
-def predict_disease():
+def predict():
     try:
         if "image" not in request.files:
             return jsonify({"Error" : "No image uploaded."})
