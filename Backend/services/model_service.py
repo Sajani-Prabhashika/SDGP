@@ -1,5 +1,5 @@
 def predict_disease():
-    #Dummy data until the ML model ready
+    #Predict the disease by scanning the image (for now it uses dummy data)
     dummy_data = {
         "Detected Disease" : "Leaf spot",
         "Confidence Score" : 0.90,
