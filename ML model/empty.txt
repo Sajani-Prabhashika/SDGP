@@ -1,0 +1,96 @@
+import pandas as pd
+import os
+import tensorflow as tf
+from tensorflow.keras import layers, models
+from tensorflow.keras.preprocessing.image import ImageDataGenerator
+from google.colab import drive
+drive.mount('/content/drive')
+path = "/content/drive/MyDrive/Diseases"
+print("Classes:", os.listdir(path))
+**Data Preprocessing**
+IMG_SIZE = (224, 224)
+BATCH_SIZE = 32
+train_datagen = ImageDataGenerator(
+    rescale=1./255,
+    rotation_range=20,
+    width_shift_range=0.2,
+    height_shift_range=0.2,
+    horizontal_flip=True,
+    validation_split=0.2 # Automatically splits the folder
+)
+train_generator = train_datagen.flow_from_directory(
+    path,
+    target_size=IMG_SIZE,
+    batch_size=BATCH_SIZE,
+    class_mode='categorical',
+    subset='training'
+)
+val_generator = train_datagen.flow_from_directory(
+    path,
+    target_size=IMG_SIZE,
+    batch_size=BATCH_SIZE,
+    class_mode='categorical',
+    subset='validation'
+)
+**Build the Model (Transfer Learning)**
+base_model = tf.keras.applications.MobileNetV2(
+    input_shape=(224, 224, 3),
+    include_top=False,
+    weights='imagenet'
+)
+base_model.trainable = False
+model = models.Sequential([
+    base_model,
+    layers.GlobalAveragePooling2D(),
+    layers.Dense(128, activation='relu'),
+    layers.Dropout(0.2),
+    layers.Dense(train_generator.num_classes, activation='softmax')
+])
+
+model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
+**Train the Model**
+history = model.fit(
+    train_generator,
+    epochs=10,
+    validation_data=val_generator
+)
+**Visulize Training Performance**
+import matplotlib.pyplot as plt
+plt.figure(figsize=(12, 4))
+plt.subplot(1, 2, 1)
+plt.plot(history.history['accuracy'], label='Training Accuracy')
+plt.plot(history.history['val_accuracy'], label='Validation Accuracy')
+plt.title('Model Accuracy')
+plt.legend()
+plt.subplot(1, 2, 2)
+plt.plot(history.history['loss'], label='Training Loss')
+plt.plot(history.history['val_loss'], label='Validation Loss')
+plt.title('Model Loss')
+plt.legend()
+
+plt.show()
+**Test with a image**
+from google.colab import files
+from tensorflow.keras.preprocessing import image
+import numpy as np
+uploaded = files.upload()
+
+for fn in uploaded.keys():
+    # 2. Preprocess the image to match model input
+    img_path = fn
+    img = image.load_img(img_path, target_size=(224, 224))
+    img_array = image.img_to_array(img)
+    img_array = np.expand_dims(img_array, axis=0) / 255.0  # Normalize like training
+
+    # 3. Make the prediction
+    predictions = model.predict(img_array)
+
+    # 4. Get the result
+    class_names = list(train_generator.class_indices.keys())
+    predicted_class = class_names[np.argmax(predictions)]
+    confidence = np.max(predictions) * 100
+
+    print(f"\n--- Prediction Results ---")
+    print(f"File: {fn}")
+    print(f"Predicted Disease: {predicted_class}")
+    print(f"Confidence: {confidence:.2f}%")
