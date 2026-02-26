@@ -100,6 +100,13 @@ export default function App() {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}><Text style={styles.headerTitle}>Teera AI 🌿</Text></View>
+      {/* Background Image Wrapper */}
+    <ImageBackground 
+      source={require('./src/assets/your-bg-image.png')} // Update path to your image
+      style={styles.backgroundImage}
+      resizeMode="cover"
+    ></ImageBackground>
+    
       <FlatList
         ref={flatListRef}
         data={messages}
