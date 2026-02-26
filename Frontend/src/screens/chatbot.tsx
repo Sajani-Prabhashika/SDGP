@@ -1,8 +1,4 @@
 import React, { useState, useRef } from 'react';
-import { SafeAreaView, StyleSheet, Text, View, TextInput, TouchableOpacity, FlatList, ActivityIndicator, KeyboardAvoidingView, Platform } from 'react-native';
-import { OpenRouter } from '@openrouter/sdk';
-
-const OPENROUTER_API_KEY = 'AIzaSyDjBIwuscn8X5S--r3RvHprliAoRR0oJq4';
 import {
   SafeAreaView,
   StyleSheet,
@@ -14,15 +10,12 @@ import {
   ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
+  ImageBackground,
 } from 'react-native';
-
-// 1. Import the OpenRouter SDK
 import { OpenRouter } from '@openrouter/sdk';
 
-// 2. Initialize OpenRouter (Removed defaultHeaders to fix TS error)
-// Replace this string with your actual sk-or-v1-... key
-const OPENROUTER_API_KEY = 'YOUR_ACTUAL_OPENROUTER_API_KEY_HERE';
-
+// 1. Initialize OpenRouter
+const OPENROUTER_API_KEY = 'AIzaSyDjBIwuscn8X5S--r3RvHprliAoRR0oJq4';
 const openRouter = new OpenRouter({
   apiKey: OPENROUTER_API_KEY,
 });
@@ -41,9 +34,15 @@ export default function App() {
   const [loading, setLoading] = useState(false);
   const flatListRef = useRef<FlatList>(null);
 
+  // Function to Clear Chat (Your 10th Commit Change)
+  const clearChat = () => {
+    setMessages([
+      { id: Date.now().toString(), role: 'assistant', content: 'Chat cleared. How can I help you now?' },
+    ]);
+  };
+
   const sendMessage = async () => {
     if (!inputText.trim() || loading) return;
-    const userMsg: Message = { id: Date.now().toString(), role: 'user', content: inputText };
 
     const userMsg: Message = {
       id: Date.now().toString(),
@@ -51,30 +50,22 @@ export default function App() {
       content: inputText,
     };
 
-    // Add user message to the UI immediately
     setMessages((prev) => [userMsg, ...prev]);
     const currentInput = inputText;
     setInputText('');
     setLoading(true);
 
     try {
-      // 3. The API Call (Using the FREE DeepSeek model and bypassing TS strict types with "as any")
       const completion = await openRouter.chat.send({
-        model: 'deepseek/deepseek-r1:free', 
+        model: 'deepseek/deepseek-r1:free',
         messages: [
           { role: 'system', content: 'You are Teera, a helpful AI assistant.' },
-          ...messages.slice().reverse().map(m => ({ role: m.role, content: m.content })),
-          { role: 'user', content: currentInput }
+          ...messages.slice().reverse().map((m) => ({ role: m.role, content: m.content })),
+          { role: 'user', content: currentInput },
         ],
-      } as any);
-      const aiResponse = completion.choices[0].message.content as string;
-      setMessages((prev) => [{ id: (Date.now() + 1).toString(), role: 'assistant', content: aiResponse }, ...prev]);
-    } catch (error) {
-      console.error(error);
         stream: false,
       } as any);
 
-      // 4. Extract Response (Forcing TS to recognize it as a string)
       const aiResponse = completion.choices[0].message.content as string;
 
       const aiMsg: Message = {
@@ -99,68 +90,56 @@ export default function App() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <View style={styles.header}><Text style={styles.headerTitle}>Teera AI 🌿</Text></View>
-      {/* Background Image Wrapper */}
-    <ImageBackground 
-      source={require('./src/assets/your-bg-image.png')} // Update path to your image
-      style={styles.backgroundImage}
-      resizeMode="cover"
-    ></ImageBackground>
-    
-      <FlatList
-        ref={flatListRef}
-        data={messages}
-        inverted
-        keyExtractor={(item) => item.id}
-        renderItem={({ item }) => (
-          <View style={[styles.bubble, item.role === 'user' ? styles.userBubble : styles.aiBubble]}>
-            <Text style={item.role === 'user' ? styles.userText : styles.aiText}>{item.content}</Text>
-          </View>
-        )}
-      />
-      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
-        <View style={styles.inputContainer}>
-          <TextInput style={styles.input} value={inputText} onChangeText={setInputText} multiline />
-          <TouchableOpacity style={styles.sendButton} onPress={sendMessage} disabled={loading}>
-            {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.sendButtonText}>Send</Text>}
-      {/* Header */}
+      {/* Updated Header with Clear Button */}
       <View style={styles.header}>
+        <View style={{ width: 60 }} /> {/* Spacer to center title */}
         <Text style={styles.headerTitle}>Teera AI 🌿</Text>
+        <TouchableOpacity onPress={clearChat} style={styles.clearButton}>
+          <Text style={styles.clearButtonText}>Clear</Text>
+        </TouchableOpacity>
       </View>
 
-      {/* Chat List */}
-      <FlatList
-        ref={flatListRef}
-        data={messages}
-        inverted // Keeps latest messages at the bottom
-        keyExtractor={(item) => item.id}
-        renderItem={({ item }) => (
-          <View style={[
-            styles.bubble, 
-            item.role === 'user' ? styles.userBubble : styles.aiBubble
-          ]}>
-            <Text style={item.role === 'user' ? styles.userText : styles.aiText}>
-              {item.content}
-            </Text>
-          </View>
-        )}
-      />
+      {/* Background Image Wrap */}
+      <ImageBackground
+        source={require('../../src/assets/background.png')} 
+        style={styles.backgroundImage}
+        resizeMode="cover"
+      >
+        <FlatList
+          ref={flatListRef}
+          data={messages}
+          inverted
+          keyExtractor={(item) => item.id}
+          contentContainerStyle={styles.listContent}
+          renderItem={({ item }) => (
+            <View style={[
+              styles.bubble,
+              item.role === 'user' ? styles.userBubble : styles.aiBubble
+            ]}>
+              <Text style={item.role === 'user' ? styles.userText : styles.aiText}>
+                {item.content}
+              </Text>
+            </View>
+          )}
+        />
+      </ImageBackground>
 
       {/* Input Area */}
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
+        verticalOffset={Platform.OS === 'ios' ? 0 : 20}
       >
         <View style={styles.inputContainer}>
           <TextInput
             style={styles.input}
             placeholder="Message Teera..."
+            placeholderTextColor="#999"
             value={inputText}
             onChangeText={setInputText}
             multiline
           />
-          <TouchableOpacity 
-            style={[styles.sendButton, { opacity: loading ? 0.5 : 1 }]} 
+          <TouchableOpacity
+            style={[styles.sendButton, { opacity: loading ? 0.5 : 1 }]}
             onPress={sendMessage}
             disabled={loading}
           >
@@ -178,26 +157,24 @@ export default function App() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#F7F9FB' },
-  header: { padding: 16, backgroundColor: '#1B5E20', alignItems: 'center' },
-  headerTitle: { color: '#fff', fontSize: 20, fontWeight: 'bold' },
-  bubble: { marginVertical: 6, marginHorizontal: 12, padding: 12, borderRadius: 18, maxWidth: '85%' },
-  userBubble: { alignSelf: 'flex-end', backgroundColor: '#1B5E20' },
-  aiBubble: { alignSelf: 'flex-start', backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: '#E0E0E0' },
-  userText: { color: '#fff' },
-  aiText: { color: '#333' },
-  inputContainer: { flexDirection: 'row', padding: 12, backgroundColor: '#fff', alignItems: 'center' },
-  input: { flex: 1, backgroundColor: '#3e8eb6', borderRadius: 20, paddingHorizontal: 16 },
-  sendButton: { backgroundColor: '#1B5E20', padding: 10, borderRadius: 20 },
-// --- STYLES ---
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#F7F9FB' },
   header: {
     padding: 16,
     backgroundColor: '#1B5E20',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
     elevation: 4,
   },
   headerTitle: { color: '#fff', fontSize: 20, fontWeight: 'bold' },
+  clearButton: {
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 8,
+  },
+  clearButtonText: { color: '#fff', fontSize: 12, fontWeight: 'bold' },
+  backgroundImage: { flex: 1, width: '100%' },
+  listContent: { paddingVertical: 10 },
   bubble: {
     marginVertical: 6,
     marginHorizontal: 12,
@@ -212,7 +189,7 @@ const styles = StyleSheet.create({
   },
   aiBubble: {
     alignSelf: 'flex-start',
-    backgroundColor: '#FFFFFF',
+    backgroundColor: 'rgba(255, 255, 255, 0.95)',
     borderWidth: 1,
     borderColor: '#E0E0E0',
     borderBottomLeftRadius: 2,
@@ -230,21 +207,17 @@ const styles = StyleSheet.create({
   input: {
     flex: 1,
     minHeight: 40,
-    maxHeight: 100,
     backgroundColor: '#F1F3F4',
     borderRadius: 20,
     paddingHorizontal: 16,
-    paddingTop: 10,
-    paddingBottom: 10,
-    fontSize: 16,
     marginRight: 8,
+    color: '#000'
   },
   sendButton: {
     backgroundColor: '#1B5E20',
     paddingVertical: 10,
     paddingHorizontal: 18,
     borderRadius: 20,
-    justifyContent: 'center',
   },
   sendButtonText: { color: '#fff', fontWeight: 'bold' },
 });
