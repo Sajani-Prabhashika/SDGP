@@ -27,7 +27,7 @@ const LoginPage: React.FC = () => {
         <TextInput
           style={styles.input}
           placeholder="Username"
-          placeholderTextColor="#94bb99"
+          placeholderTextColor="#95c69c"
           value={username}
           onChangeText={(text) => setUsername(text)}
         />
@@ -35,7 +35,7 @@ const LoginPage: React.FC = () => {
         <TextInput
           style={styles.input}
           placeholder="Password"
-          placeholderTextColor="#7A9A7E"
+          placeholderTextColor="#95c69c"
           secureTextEntry={true} 
           value={password}
           onChangeText={(text) => setPassword(text)}
