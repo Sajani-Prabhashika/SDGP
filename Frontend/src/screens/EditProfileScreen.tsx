@@ -42,7 +42,7 @@ const EditProfileScreen = () => {
         <View style={styles.imageContainer}>
           <View style={styles.imageWrapper}>
             <Image
-              source={{ uri: "https://via.placeholder.com/110" }}
+              source={{ uri: "" }}
               style={styles.profileImage}
             />
             <TouchableOpacity style={styles.cameraIcon}>
@@ -53,8 +53,6 @@ const EditProfileScreen = () => {
 
         {/* Input Fields Section */}
         <View style={styles.form}>
-          <Text style={styles.sectionTitle}>Public Information</Text>
-          
           <View style={styles.inputGroup}>
             <Text style={styles.label}>Full Name</Text>
             <View style={styles.inputWrapper}>
