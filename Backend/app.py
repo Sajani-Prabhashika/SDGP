@@ -12,7 +12,7 @@ def init_app():
     @app.route("/", methods=['GET'])
     def backend_check():
         return jsonify({
-            "Teera Backend is running."
+            "Message" : "Teera Backend is running."
         })
     
     return app
