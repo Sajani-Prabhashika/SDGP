@@ -7,12 +7,12 @@ def init_app():
     app = Flask(__name__)
     CORS(app)
 
-    app.register_blueprint(prediction_bp, url_pregix = "/api/prediction")
+    app.register_blueprint(prediction_bp, url_prefix = "/api/predict")
 
     @app.route("/", methods=['GET'])
     def backend_check():
         return jsonify({
-            "Teera Backend is running."
+            "Message" : "Teera Backend is running."
         })
     
     return app
