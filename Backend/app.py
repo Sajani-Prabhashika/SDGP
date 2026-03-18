@@ -3,20 +3,19 @@ from flask_cors import CORS
 from routes.prediction import prediction_bp
 
 #Setup the Flask app (Backend)
-def init_app():
-    app = Flask(__name__)
-    CORS(app)
 
-    app.register_blueprint(prediction_bp, url_prefix = "/api/predict")
 
-    @app.route("/", methods=['GET'])
-    def backend_check():
-        return jsonify({
-            "Message" : "Teera Backend is running."
-        })
-    
-    return app
+# 1. Initialize Firebase with 'firebase_config.json' files
+cred = credentials.Certificate("firebase_config.json")
 
-if __name__ == "__main__":
-    app = init_app()
-    app.run(debug=True) 
+try:
+    firebase_admin.initialize_app(cred, {
+        'storageBucket': 'terrasdgp.firebasestorage.app' # Your Project ID
+    })
+    db = firestore.client()
+    bucket = storage.bucket()
+    print("--- Firebase Firestore & Storage Connected Successfully ---")
+except Exception as e:
+    print(f"--- Firebase Connection Warning: {e} ---")
+    db = firestore.client()
+    bucket = None
