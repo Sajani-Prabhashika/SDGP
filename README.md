@@ -27,3 +27,7 @@ It also includes a geospatial alert system to notify nearby farmers about diseas
 - Firebase Admin SDK
 - Firestore (NoSQL database)
 - Firebase Authentication
+  
+#### API & Communication
+- Postman (API)
+- Requests
