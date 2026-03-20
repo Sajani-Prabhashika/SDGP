@@ -14,6 +14,7 @@ import LoginPage from './src/screens/LoginPage';
 import SignUpPage from './src/screens/Signup';
 import ResultPage from './src/screens/Result page';
 import Chatbot from './src/screens/chatbot';  
+import CommunityScreen from './src/screens/CommunityScreen';
 
 
  
@@ -42,6 +43,7 @@ export default function App() {
           <Tab.Screen name="SignUp" component={SignUpPage} />
           <Tab.Screen name="Result" component={ResultPage} />
           <Tab.Screen name="Chatbot" component={Chatbot} />
+          <Tab.Screen name="Community" component={CommunityScreen} />
           
           
           
