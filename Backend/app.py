@@ -16,3 +16,12 @@ from datetime import datetime, timedelta, timezone
 from twilio.rest import Client
 
 #--
+
+# --- INITIALIZATION ---
+# Make sure "firebase_config.json" is in your backend folder!
+cred = credentials.Certificate("firebase_config.json")
+firebase_admin.initialize_app(cred)
+db = firestore.client()
+
+app = Flask(__name__)
+CORS(app) 
