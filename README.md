@@ -39,3 +39,5 @@ It also includes a geospatial alert system to notify nearby farmers about diseas
   
 #### Notification /  Alerts
 - Twilio (SMS / communication services)
+
+## Installation
