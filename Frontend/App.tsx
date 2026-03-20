@@ -1,22 +1,33 @@
 import React from 'react';
 import { NavigationContainer } from '@react-navigation/native';
-import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 
-// Import Screens
-import HomeScreen from './src/screens/HomeScreen';
-import ScanScreen from './src/screens/ScanScreen';
 
-const Stack = createNativeStackNavigator();
+// Screen Imports
+import HomeScreen from './src/screens/homePage'; 
 
-function App() {
+
+import EditProfileScreen from './src/screens/EditProfileScreen'; 
+
+const Tab = createBottomTabNavigator();
+
+export default function App() {
   return (
-    <NavigationContainer>
-      <Stack.Navigator screenOptions={{ headerShown: false }}>
-        <Stack.Screen name="Home" component={HomeScreen} />
-        <Stack.Screen name="Scan" component={ScanScreen} />
-      </Stack.Navigator>
-    </NavigationContainer>
+    
+      <NavigationContainer>
+        <Tab.Navigator
+          initialRouteName="Home"
+          backBehavior="history" 
+          screenOptions={{
+            headerShown: false,
+            tabBarStyle: { display: 'none' }, 
+          }}
+        >
+          <Tab.Screen name="Home" component={HomeScreen} />
+          
+          
+        </Tab.Navigator>
+      </NavigationContainer>
+   
   );
 }
-
-export default App;
