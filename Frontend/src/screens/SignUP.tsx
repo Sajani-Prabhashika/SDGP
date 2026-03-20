@@ -1,141 +1,107 @@
-import React, { useState } from "react";
-import {
-  SafeAreaView,
-  View,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  StyleSheet,
-  Alert,
-} from "react-native";
+import React, { useState } from 'react';
+import { 
+  StyleSheet, Text, View, TextInput, TouchableOpacity, 
+  SafeAreaView, StatusBar, KeyboardAvoidingView, Platform 
+} from 'react-native';
+import Ionicons from 'react-native-vector-icons/Ionicons';
+import { useNavigation } from '@react-navigation/native';
+import { useTheme } from '../ThemeContext';
 
-export default function SignupScreen({ navigation }) {
-  const [email, setEmail] = useState("");
-  const [firstName, setFirstName] = useState("");
-  const [lastName, setLastName] = useState("");
-  const [password, setPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
-
-  const handleSignup = () => {
-    if (!email || !firstName || !lastName || !password || !confirmPassword) {
-      Alert.alert("Error", "Please fill all fields");
-      return;
-    }
-
-    if (password !== confirmPassword) {
-      Alert.alert("Error", "Passwords are not matching");
-      return;
-    }
-
-    Alert.alert("Success", "Account created Successfully (demo)");
-  };
+const SignUpPage: React.FC = () => {
+  const navigation = useNavigation<any>();
+  const { theme, isDark } = useTheme();
+  
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
 
   return (
-    <SafeAreaView style={styles.container}>
-      <Text style={styles.header}>Sign Up</Text>
+    <SafeAreaView style={[styles.container, { backgroundColor: isDark ? theme.background : '#E8F5E9' }]}>
+      <StatusBar barStyle={isDark ? "light-content" : "dark-content"} />
+      
+      <KeyboardAvoidingView 
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        style={styles.innerContainer}
+      >
+        <View style={styles.headerSection}>
+          <Text style={[styles.title, { color: theme.text }]}>Create Account</Text>
+          <Text style={[styles.subtitle, { color: theme.subText }]}>Join the Teera community today!</Text>
+        </View>
 
-      <TextInput
-        style={styles.input}
-        placeholder="Email Address"
-        placeholderTextColor="#666"
-        value={email}
-        onChangeText={setEmail}
-      />
+        <View style={[styles.card, { backgroundColor: theme.card }]}>
+          
+          {/* Full Name */}
+          <View style={[styles.inputContainer, { backgroundColor: isDark ? theme.background : '#F5F5F5' }]}>
+            <Ionicons name="person-outline" size={20} color="#437C60" style={styles.icon} />
+            <TextInput
+              style={[styles.input, { color: theme.text }]}
+              placeholder="Full Name"
+              placeholderTextColor={isDark ? "#888" : "#A8D5BA"}
+              value={name}
+              onChangeText={setName}
+            />
+          </View>
 
-      <TextInput
-        style={styles.input}
-        placeholder="First Name"
-        placeholderTextColor="#666"
-        value={firstName}
-        onChangeText={setFirstName}
-      />
+          {/* Email */}
+          <View style={[styles.inputContainer, { backgroundColor: isDark ? theme.background : '#F5F5F5' }]}>
+            <Ionicons name="mail-outline" size={20} color="#437C60" style={styles.icon} />
+            <TextInput
+              style={[styles.input, { color: theme.text }]}
+              placeholder="Email Address"
+              placeholderTextColor={isDark ? "#888" : "#A8D5BA"}
+              keyboardType="email-address"
+              value={email}
+              onChangeText={setEmail}
+            />
+          </View>
 
-      <TextInput
-        style={styles.input}
-        placeholder="Last Name"
-        placeholderTextColor="#666"
-        value={lastName}
-        onChangeText={setLastName}
-      />
+          {/* Password */}
+          <View style={[styles.inputContainer, { backgroundColor: isDark ? theme.background : '#F5F5F5' }]}>
+            <Ionicons name="lock-closed-outline" size={20} color="#437C60" style={styles.icon} />
+            <TextInput
+              style={[styles.input, { color: theme.text }]}
+              placeholder="Password"
+              placeholderTextColor={isDark ? "#888" : "#A8D5BA"}
+              secureTextEntry={!showPassword}
+              value={password}
+              onChangeText={setPassword}
+            />
+            <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
+              <Ionicons name={showPassword ? "eye-off-outline" : "eye-outline"} size={22} color="#437C60" />
+            </TouchableOpacity>
+          </View>
 
-      <TextInput
-        style={styles.input}
-        placeholder="Password"
-        placeholderTextColor="#666"
-        secureTextEntry
-        value={password}
-        onChangeText={setPassword}
-      />
+          <TouchableOpacity style={styles.button} onPress={() => navigation.navigate('Home')}>
+            <Text style={styles.buttonText}>Sign Up</Text>
+          </TouchableOpacity>
 
-      <TextInput
-        style={styles.input}
-        placeholder="Confirm Password"
-        placeholderTextColor="#666"
-        secureTextEntry
-        value={confirmPassword}
-        onChangeText={setConfirmPassword}
-      />
-
-      <TouchableOpacity style={styles.button} onPress={handleSignup}>
-        <Text style={styles.buttonText}>Create Account</Text>
-      </TouchableOpacity>
-
-      <Text style={styles.footerText}>
-        Already have an account?{" "}
-        <Text
-          style={styles.loginLink}
-          onPress={() => navigation.navigate("Login")}
-        >
-          Login
-        </Text>
-      </Text>
+          <View style={styles.footerRow}>
+            <Text style={{ color: theme.subText }}>Already have an account? </Text>
+            <TouchableOpacity onPress={() => navigation.navigate('Login')}>
+              <Text style={styles.loginText}>Log In</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
-}
+};
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#fff",
-    paddingHorizontal: 20,
-    justifyContent: "center",
-  },
-  header: {
-    fontSize: 26,
-    fontWeight: "bold",
-    color: "#333",
-    textAlign: "center",
-    marginBottom: 30,
-  },
-  input: {
-    height: 50,
-    borderWidth: 1,
-    borderColor: "#8BC3A8",
-    borderRadius: 10,
-    paddingHorizontal: 15,
-    backgroundColor: "#E8F5E9",
-    marginBottom: 15,
-  },
-  button: {
-    backgroundColor: "#3A7D58",
-    paddingVertical: 15,
-    borderRadius: 25,
-    alignItems: "center",
-    marginTop: 10,
-  },
-  buttonText: {
-    color: "#fff",
-    fontSize: 16,
-    fontWeight: "bold",
-  },
-  footerText: {
-    textAlign: "center",
-    marginTop: 20,
-    color: "#555",
-  },
-  loginLink: {
-    color: "#3A7D58",
-    fontWeight: "bold",
-  },
+  container: { flex: 1 },
+  innerContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 20 },
+  headerSection: { alignItems: 'center', marginBottom: 30 },
+  title: { fontSize: 28, fontWeight: 'bold' },
+  subtitle: { fontSize: 14, marginTop: 5 },
+  card: { width: '100%', padding: 25, borderRadius: 30, elevation: 8 },
+  inputContainer: { flexDirection: 'row', alignItems: 'center', width: '100%', height: 55, borderRadius: 15, paddingHorizontal: 15, marginBottom: 15 },
+  icon: { marginRight: 10 },
+  input: { flex: 1, fontSize: 16 },
+  button: { backgroundColor: '#437C60', width: '100%', height: 55, borderRadius: 15, justifyContent: 'center', alignItems: 'center', marginTop: 10 },
+  buttonText: { color: '#FFFFFF', fontSize: 18, fontWeight: 'bold' },
+  footerRow: { flexDirection: 'row', marginTop: 25, justifyContent: 'center' },
+  loginText: { color: '#437C60', fontWeight: 'bold' },
 });
 
+export default SignUpPage;

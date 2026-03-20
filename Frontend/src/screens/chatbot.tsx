@@ -10,14 +10,13 @@ import {
   ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
+  StatusBar,
 } from 'react-native';
-
-// 1. Import the OpenRouter SDK
 import { OpenRouter } from '@openrouter/sdk';
+import Ionicons from 'react-native-vector-icons/Ionicons';
+import { useTheme } from '../ThemeContext'; // Assuming your theme context path
 
-// 2. Initialize OpenRouter (Removed defaultHeaders to fix TS error)
-// Replace this string with your actual sk-or-v1-... key
-const OPENROUTER_API_KEY = 'YOUR_ACTUAL_OPENROUTER_API_KEY_HERE';
+const OPENROUTER_API_KEY = 'YOUR_ACTUAL_API_KEY';
 
 const openRouter = new OpenRouter({
   apiKey: OPENROUTER_API_KEY,
@@ -29,9 +28,10 @@ interface Message {
   content: string;
 }
 
-export default function App() {
+export default function ChatScreen() {
+  const { theme } = useTheme();
   const [messages, setMessages] = useState<Message[]>([
-    { id: '1', role: 'assistant', content: 'Ayubowan! I am Teera, powered by DeepSeek. How can I help you today?' },
+    { id: '1', role: 'assistant', content: 'Ayubowan! I am Teera, your plant care assistant. How can I help you today?' },
   ]);
   const [inputText, setInputText] = useState('');
   const [loading, setLoading] = useState(false);
@@ -46,40 +46,35 @@ export default function App() {
       content: inputText,
     };
 
-    // Add user message to the UI immediately
     setMessages((prev) => [userMsg, ...prev]);
     const currentInput = inputText;
     setInputText('');
     setLoading(true);
 
     try {
-      // 3. The API Call (Using the FREE DeepSeek model and bypassing TS strict types with "as any")
       const completion = await openRouter.chat.send({
         model: 'deepseek/deepseek-r1:free', 
         messages: [
-          { role: 'system', content: 'You are Teera, a helpful AI assistant.' },
+          { role: 'system', content: 'You are Teera, a knowledgeable plant care expert. Provide concise, helpful advice.' },
           ...messages.slice().reverse().map(m => ({ role: m.role, content: m.content })),
           { role: 'user', content: currentInput }
         ],
-        stream: false,
       } as any);
 
-      // 4. Extract Response (Forcing TS to recognize it as a string)
       const aiResponse = completion.choices[0].message.content as string;
 
       const aiMsg: Message = {
         id: (Date.now() + 1).toString(),
         role: 'assistant',
-        content: aiResponse || 'I am sorry, I received an empty response.',
+        content: aiResponse || 'I am sorry, I am having trouble thinking right now.',
       };
 
       setMessages((prev) => [aiMsg, ...prev]);
     } catch (error) {
-      console.error("API Error:", error);
       const errorMsg: Message = {
         id: 'err-' + Date.now(),
         role: 'assistant',
-        content: '⚠️ Connection failed. Please check your internet or API key.',
+        content: '⚠️ Connection lost. Please check your internet.',
       };
       setMessages((prev) => [errorMsg, ...prev]);
     } finally {
@@ -88,52 +83,63 @@ export default function App() {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
+      <StatusBar barStyle={theme.dark ? "light-content" : "dark-content"} />
+      
       {/* Header */}
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>Teera AI 🌿</Text>
+      <View style={[styles.header, { backgroundColor: theme.card, borderColor: theme.border }]}>
+        <Text style={[styles.headerTitle, { color: theme.text }]}>Teera AI 🌿</Text>
+        <Text style={[styles.headerStatus, { color: '#2E7D32' }]}>DeepSeek R1 Online</Text>
       </View>
 
-      {/* Chat List */}
+      {/* Chat History */}
       <FlatList
         ref={flatListRef}
         data={messages}
-        inverted // Keeps latest messages at the bottom
+        inverted
         keyExtractor={(item) => item.id}
+        contentContainerStyle={styles.listContent}
+        showsVerticalScrollIndicator={false}
         renderItem={({ item }) => (
           <View style={[
             styles.bubble, 
-            item.role === 'user' ? styles.userBubble : styles.aiBubble
+            item.role === 'user' ? 
+              [styles.userBubble, { backgroundColor: '#2E7D32' }] : 
+              [styles.aiBubble, { backgroundColor: theme.card, borderColor: theme.border }]
           ]}>
-            <Text style={item.role === 'user' ? styles.userText : styles.aiText}>
+            <Text style={[
+              styles.messageText, 
+              { color: item.role === 'user' ? '#FFF' : theme.text }
+            ]}>
               {item.content}
             </Text>
           </View>
         )}
       />
 
-      {/* Input Area */}
+      {/* Input Section */}
       <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
       >
-        <View style={styles.inputContainer}>
+        <View style={[styles.inputContainer, { backgroundColor: theme.card, borderTopColor: theme.border }]}>
           <TextInput
-            style={styles.input}
-            placeholder="Message Teera..."
+            style={[styles.input, { backgroundColor: theme.background, color: theme.text }]}
+            placeholder="Ask about plant care..."
+            placeholderTextColor={theme.subText}
             value={inputText}
             onChangeText={setInputText}
             multiline
           />
           <TouchableOpacity 
-            style={[styles.sendButton, { opacity: loading ? 0.5 : 1 }]} 
+            style={[styles.sendButton, { opacity: loading || !inputText.trim() ? 0.6 : 1 }]} 
             onPress={sendMessage}
-            disabled={loading}
+            disabled={loading || !inputText.trim()}
           >
             {loading ? (
               <ActivityIndicator color="#fff" size="small" />
             ) : (
-              <Text style={styles.sendButtonText}>Send</Text>
+              <Ionicons name="send" size={20} color="#fff" />
             )}
           </TouchableOpacity>
         </View>
@@ -142,63 +148,64 @@ export default function App() {
   );
 }
 
-// --- STYLES ---
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#F7F9FB' },
+  container: { flex: 1 },
   header: {
-    padding: 16,
-    backgroundColor: '#1B5E20',
+    paddingVertical: 15,
     alignItems: 'center',
-    elevation: 4,
+    borderBottomWidth: 1,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOpacity: 0.05,
+    shadowRadius: 5,
   },
-  headerTitle: { color: '#fff', fontSize: 20, fontWeight: 'bold' },
+  headerTitle: { fontSize: 18, fontWeight: '700' },
+  headerStatus: { fontSize: 12, fontWeight: '600', marginTop: 2 },
+  listContent: { paddingVertical: 20, paddingHorizontal: 15 },
   bubble: {
-    marginVertical: 6,
-    marginHorizontal: 12,
-    padding: 12,
-    borderRadius: 18,
-    maxWidth: '85%',
+    marginVertical: 4,
+    padding: 14,
+    borderRadius: 20,
+    maxWidth: '80%',
+    elevation: 1,
+    shadowColor: '#000',
+    shadowOpacity: 0.02,
+    shadowRadius: 2,
   },
   userBubble: {
     alignSelf: 'flex-end',
-    backgroundColor: '#1B5E20',
-    borderBottomRightRadius: 2,
+    borderBottomRightRadius: 4,
   },
   aiBubble: {
     alignSelf: 'flex-start',
-    backgroundColor: '#FFFFFF',
     borderWidth: 1,
-    borderColor: '#E0E0E0',
-    borderBottomLeftRadius: 2,
+    borderBottomLeftRadius: 4,
   },
-  userText: { color: '#fff', fontSize: 16 },
-  aiText: { color: '#333', fontSize: 16 },
+  messageText: { fontSize: 15, lineHeight: 22 },
   inputContainer: {
     flexDirection: 'row',
-    padding: 12,
-    backgroundColor: '#fff',
+    padding: 15,
+    paddingBottom: Platform.OS === 'ios' ? 25 : 15,
     borderTopWidth: 1,
-    borderColor: '#ECEFF1',
     alignItems: 'center',
   },
   input: {
     flex: 1,
-    minHeight: 40,
+    minHeight: 45,
     maxHeight: 100,
-    backgroundColor: '#F1F3F4',
-    borderRadius: 20,
-    paddingHorizontal: 16,
-    paddingTop: 10,
-    paddingBottom: 10,
-    fontSize: 16,
-    marginRight: 8,
+    borderRadius: 22,
+    paddingHorizontal: 18,
+    paddingTop: 12,
+    paddingBottom: 12,
+    fontSize: 15,
+    marginRight: 10,
   },
   sendButton: {
-    backgroundColor: '#1B5E20',
-    paddingVertical: 10,
-    paddingHorizontal: 18,
-    borderRadius: 20,
+    backgroundColor: '#2E7D32',
+    width: 45,
+    height: 45,
+    borderRadius: 22.5,
     justifyContent: 'center',
+    alignItems: 'center',
   },
-  sendButtonText: { color: '#fff', fontWeight: 'bold' },
 });
