@@ -11,6 +11,7 @@ import NotificationsScreen from './src/screens/Notification';
 import ProfileScreen from './src/screens/ProfileScreen';
 import EditProfileScreen from './src/screens/EditProfileScreen'; 
 import LoginPage from './src/screens/LoginPage';
+import SignUpPage from './src/screens/Signup';
 
  
 
@@ -35,6 +36,8 @@ export default function App() {
           <Tab.Screen name="Profile" component={ProfileScreen} />
           <Tab.Screen name="EditProfile" component={EditProfileScreen} />
           <Tab.Screen name="Login" component={LoginPage} />
+          <Tab.Screen name="SignUp" component={SignUpPage} />
+          
           
           
           
