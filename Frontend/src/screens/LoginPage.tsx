@@ -6,45 +6,78 @@ import {
   TextInput, 
   TouchableOpacity, 
   SafeAreaView, 
-  StatusBar 
+  StatusBar,
+  KeyboardAvoidingView,
+  Platform,
+  TouchableWithoutFeedback,
+  Keyboard
 } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
 
 const LoginPage: React.FC = () => {
+  const navigation = useNavigation<any>();
   const [username, setUsername] = useState<string>('');
   const [password, setPassword] = useState<string>('');
+
+  const handleLogin = () => {
+    // For now, just navigate to Home
+    navigation.navigate('Home');
+  };
 
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" />
       
-      <View style={styles.logoContainer}>
-        <Text style={styles.logoText}>Teera</Text>
-      </View>
+      <KeyboardAvoidingView 
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        style={{ flex: 1, width: '100%', justifyContent: 'center', alignItems: 'center' }}
+      >
+        <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+          <View style={styles.innerContainer}>
+            
+            <View style={styles.logoContainer}>
+              <Text style={styles.logoText}>Teera</Text>
+            </View>
 
-      <View style={styles.card}>
-        <Text style={styles.cardTitle}>Sign in with email.</Text>
+            <View style={styles.card}>
+              <Text style={styles.cardTitle}>Sign in with email.</Text>
 
-        <TextInput
-          style={styles.input}
-          placeholder="Username"
-          placeholderTextColor="#95c69c"
-          value={username}
-          onChangeText={(text) => setUsername(text)}
-        />
+              <TextInput
+                style={styles.input}
+                placeholder="Username or Email"
+                placeholderTextColor="#95c69c"
+                autoCapitalize="none"
+                autoCorrect={false}
+                value={username}
+                onChangeText={setUsername}
+              />
 
-        <TextInput
-          style={styles.input}
-          placeholder="Password"
-          placeholderTextColor="#95c69c"
-          secureTextEntry={true} 
-          value={password}
-          onChangeText={(text) => setPassword(text)}
-        />
+              <TextInput
+                style={styles.input}
+                placeholder="Password"
+                placeholderTextColor="#95c69c"
+                secureTextEntry={true} 
+                value={password}
+                onChangeText={setPassword}
+              />
 
-        <TouchableOpacity style={styles.button}>
-          <Text style={styles.buttonText}>Log in</Text>
-        </TouchableOpacity>
-      </View>
+              <TouchableOpacity style={styles.button} onPress={handleLogin}>
+                <Text style={styles.buttonText}>Log in</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity 
+                style={{ marginTop: 20 }} 
+                onPress={() => navigation.navigate('SignUp')}
+              >
+                <Text style={{ color: '#345E41', fontSize: 14 }}>
+                  Don't have an account? <Text style={{ fontWeight: 'bold' }}>Sign Up</Text>
+                </Text>
+              </TouchableOpacity>
+            </View>
+
+          </View>
+        </TouchableWithoutFeedback>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 };
@@ -53,8 +86,11 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#a5bb72',
+  },
+  innerContainer: {
     alignItems: 'center',
     justifyContent: 'center',
+    width: '100%',
   },
   logoContainer: {
     marginBottom: 40,
@@ -71,7 +107,13 @@ const styles = StyleSheet.create({
     padding: 25,
     borderRadius: 20,
     alignItems: 'center',
-    elevation: 4, // Android වල පෙනෙන shadow එක
+    // Android Shadow
+    elevation: 4,
+    // iOS Shadow
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
   },
   cardTitle: {
     fontSize: 16,
@@ -87,6 +129,7 @@ const styles = StyleSheet.create({
     marginBottom: 15,
     borderWidth: 1,
     borderColor: '#A8D5BA',
+    color: '#000',
   },
   button: {
     backgroundColor: '#437C60',
@@ -94,10 +137,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: 40,
     borderRadius: 25,
     marginTop: 10,
+    width: '100%',
+    alignItems: 'center',
   },
   buttonText: {
     color: '#FFFFFF',
     fontWeight: 'bold',
+    fontSize: 16,
   },
 });
 
