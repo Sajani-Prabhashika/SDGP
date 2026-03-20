@@ -22,3 +22,8 @@ It also includes a geospatial alert system to notify nearby farmers about diseas
 - TensorFlow (CNN model)
 - NumPy (data processing)
 - Pillow (PIL) (image handling)
+
+#### Database & Authentication
+- Firebase Admin SDK
+- Firestore (NoSQL database)
+- Firebase Authentication
