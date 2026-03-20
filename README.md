@@ -12,3 +12,8 @@ It also includes a geospatial alert system to notify nearby farmers about diseas
 - Typescript
 - Expo
 
+### Backend
+
+#### Core Framework
+- Flask (Python)
+- Flask-CORS
