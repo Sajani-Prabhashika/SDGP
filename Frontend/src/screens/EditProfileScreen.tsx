@@ -1,126 +1,156 @@
-import React, { useState, useRef } from "react";
+import React, { useState } from 'react';
 import {
   View,
   Text,
   StyleSheet,
-  Image,
-  TouchableOpacity,
-  ScrollView,
   TextInput,
+  TouchableOpacity,
   SafeAreaView,
-  Keyboard,
-} from "react-native";
-import { Ionicons } from "@expo/vector-icons";
+  ScrollView,
+  Image,
+  Alert, // For the Yes/No popup
+} from 'react-native';
+import Ionicons from 'react-native-vector-icons/Ionicons';
+import { useNavigation } from '@react-navigation/native';
+import { launchImageLibrary } from 'react-native-image-picker'; // For Gallery
+import { useTheme } from '../ThemeContext'; 
 
 const EditProfileScreen = () => {
-  const [name, setName] = useState("Wasantha Ranasinghe");
-  const [email, setEmail] = useState("wasantha@gmail.com");
-  const [birthdate, setBirthdate] = useState("04-July-1965");
-  const [location, setLocation] = useState("Galle");
+  const navigation = useNavigation<any>();
+  const { theme, isDark } = useTheme(); // Global theme state
 
-  // Refs for focusing inputs
-  const nameRef = useRef(null);
-  const emailRef = useRef(null);
-  const birthdateRef = useRef(null);
-  const locationRef = useRef(null);
+  // Profile States
+  const [name, setName] = useState('Wasantha Ranasinghe');
+  const [email, setEmail] = useState('wasantha@gmail.com');
+  const [phone, setPhone] = useState('+94 77 123 4567');
+  const [profilePic, setProfilePic] = useState("https://via.placeholder.com/120");
+
+  // --- Logic to change photo ---
+  const handlePhotoPress = () => {
+    Alert.alert(
+      "Change Profile Picture",
+      "Do you want to open the gallery to change your photo?",
+      [
+        {
+          text: "No",
+          onPress: () => console.log("User cancelled"),
+          style: "cancel"
+        },
+        { 
+          text: "Yes", 
+          onPress: () => openGallery() 
+        }
+      ]
+    );
+  };
+
+  const openGallery = async () => {
+    const options: any = {
+      mediaType: 'photo',
+      quality: 1,
+    };
+
+    const result = await launchImageLibrary(options);
+
+    if (result.assets && result.assets.length > 0) {
+      const uri = result.assets[0].uri;
+      if (uri) {
+        setProfilePic(uri); // Updates the UI with selected photo
+      }
+    }
+  };
 
   const handleSave = () => {
-    Keyboard.dismiss();
-    alert("Profile Updated Successfully!");
+    Alert.alert("Success", "Profile updated successfully!");
+    navigation.goBack();
   };
 
   return (
-    <SafeAreaView style={styles.container}>
-      <ScrollView contentContainerStyle={styles.scrollContent}>
-        
-        {/* Header Section */}
-        <View style={styles.header}>
-          <Text style={styles.title}>Edit Profile</Text>
-        </View>
+    <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
+      
+      {/* --- Header --- */}
+      <View style={styles.header}>
+        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+          <Ionicons name="arrow-back" size={28} color={theme.text} />
+        </TouchableOpacity>
+        <Text style={[styles.headerTitle, { color: theme.text }]}>Edit Profile</Text>
+        <View style={{ width: 28 }} /> 
+      </View>
 
-        {/* Profile Image Section */}
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
+        
+        {/* --- Profile Picture Section --- */}
         <View style={styles.imageContainer}>
           <View style={styles.imageWrapper}>
-            <Image
-              source={{ uri: "" }}
-              style={styles.profileImage}
+            <Image 
+              source={{ uri: profilePic }} 
+              style={[styles.profileImage, { borderColor: theme.card }]} 
             />
-            <TouchableOpacity style={styles.cameraIcon}>
-              <Ionicons name="camera" size={18} color="#fff" />
+            {/* Camera Button triggers the Alert */}
+            <TouchableOpacity 
+              style={styles.cameraButton} 
+              onPress={handlePhotoPress}
+            >
+              <Ionicons name="camera" size={20} color="#FFF" />
             </TouchableOpacity>
           </View>
+          <Text style={[styles.userNameTitle, { color: theme.text }]}>Hello, {name.split(' ')[0]}!</Text>
         </View>
 
-        {/* Input Fields Section */}
-        <View style={styles.form}>
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>Full Name</Text>
-            <View style={styles.inputWrapper}>
-              <TextInput
-                ref={nameRef}
-                style={styles.textInput}
-                value={name}
-                onChangeText={setName}
-              />
-              <TouchableOpacity onPress={() => nameRef.current?.focus()}>
-                <Ionicons name="pencil" size={16} color="#3A7D58" />
-              </TouchableOpacity>
-            </View>
+        {/* --- Form Section --- */}
+        <View style={[styles.formContainer, { backgroundColor: theme.card }]}>
+          
+          {/* Name Input */}
+          <Text style={[styles.inputLabel, { color: theme.subText }]}>Full Name</Text>
+          <View style={[styles.inputWrapper, { 
+            backgroundColor: theme.background, 
+            borderColor: isDark ? '#444' : '#E0E0E0' 
+          }]}>
+            <Ionicons name="person-outline" size={20} color="#2E7D32" style={styles.inputIcon} />
+            <TextInput
+              style={[styles.input, { color: theme.text }]}
+              value={name}
+              onChangeText={setName}
+              placeholderTextColor={theme.subText}
+            />
           </View>
 
-          <Text style={[styles.sectionTitle, { marginTop: 20 }]}>Private Details</Text>
-
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>E-mail Address</Text>
-            <View style={styles.inputWrapper}>
-              <TextInput
-                ref={emailRef}
-                style={styles.textInput}
-                value={email}
-                onChangeText={setEmail}
-                keyboardType="email-address"
-                autoCapitalize="none"
-              />
-              <TouchableOpacity onPress={() => emailRef.current?.focus()}>
-                <Ionicons name="pencil" size={16} color="#3A7D58" />
-              </TouchableOpacity>
-            </View>
+          {/* Email Input */}
+          <Text style={[styles.inputLabel, { color: theme.subText }]}>Email Address</Text>
+          <View style={[styles.inputWrapper, { 
+            backgroundColor: theme.background, 
+            borderColor: isDark ? '#444' : '#E0E0E0' 
+          }]}>
+            <Ionicons name="mail-outline" size={20} color="#2E7D32" style={styles.inputIcon} />
+            <TextInput
+              style={[styles.input, { color: theme.text }]}
+              value={email}
+              onChangeText={setEmail}
+              keyboardType="email-address"
+              placeholderTextColor={theme.subText}
+            />
           </View>
 
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>Birthdate</Text>
-            <View style={styles.inputWrapper}>
-              <TextInput
-                ref={birthdateRef}
-                style={styles.textInput}
-                value={birthdate}
-                onChangeText={setBirthdate}
-              />
-              <TouchableOpacity onPress={() => birthdateRef.current?.focus()}>
-                <Ionicons name="pencil" size={16} color="#3A7D58" />
-              </TouchableOpacity>
-            </View>
-          </View>
-
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>Location</Text>
-            <View style={styles.inputWrapper}>
-              <TextInput
-                ref={locationRef}
-                style={styles.textInput}
-                value={location}
-                onChangeText={setLocation}
-              />
-              <TouchableOpacity onPress={() => locationRef.current?.focus()}>
-                <Ionicons name="pencil" size={16} color="#3A7D58" />
-              </TouchableOpacity>
-            </View>
+          {/* Phone Input */}
+          <Text style={[styles.inputLabel, { color: theme.subText }]}>Phone Number</Text>
+          <View style={[styles.inputWrapper, { 
+            backgroundColor: theme.background, 
+            borderColor: isDark ? '#444' : '#E0E0E0' 
+          }]}>
+            <Ionicons name="call-outline" size={20} color="#2E7D32" style={styles.inputIcon} />
+            <TextInput
+              style={[styles.input, { color: theme.text }]}
+              value={phone}
+              onChangeText={setPhone}
+              keyboardType="phone-pad"
+              placeholderTextColor={theme.subText}
+            />
           </View>
         </View>
 
-        {/* Save Button - Styled like OTP Verify Button */}
-        <TouchableOpacity style={styles.button} onPress={handleSave}>
-          <Text style={styles.buttonText}>Save Changes</Text>
+        {/* --- Save Button --- */}
+        <TouchableOpacity style={styles.saveButton} onPress={handleSave}>
+          <Text style={styles.saveButtonText}>Save Changes</Text>
         </TouchableOpacity>
 
       </ScrollView>
@@ -131,100 +161,62 @@ const EditProfileScreen = () => {
 export default EditProfileScreen;
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#fff",
-  },
-  scrollContent: {
-    paddingHorizontal: 30,
-    paddingBottom: 40,
-  },
+  container: { flex: 1 },
   header: {
-    alignItems: "center",
-    marginTop: 40,
-    marginBottom: 30,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    paddingVertical: 20,
   },
-  title: {
-    fontSize: 22,
-    fontWeight: "600",
-    color: "#222",
-  },
-  imageContainer: {
-    alignItems: "center",
-    marginBottom: 40,
-  },
-  imageWrapper: {
-    position: "relative",
-  },
-  profileImage: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-    backgroundColor: "#C5E1A5", // Matching OTP box light green
-    borderWidth: 2,
-    borderColor: "#81C784",
-  },
-  cameraIcon: {
-    position: "absolute",
+  backButton: { padding: 5 },
+  headerTitle: { fontSize: 20, fontWeight: 'bold' },
+  scrollContent: { paddingHorizontal: 20, paddingBottom: 40 },
+  imageContainer: { alignItems: 'center', marginTop: 10, marginBottom: 30 },
+  imageWrapper: { position: 'relative' },
+  profileImage: { width: 120, height: 120, borderRadius: 60, borderWidth: 4 },
+  userNameTitle: { marginTop: 15, fontSize: 22, fontWeight: 'bold' },
+  cameraButton: {
+    position: 'absolute',
     bottom: 0,
-    right: 0,
-    backgroundColor: "#407B60", // Matching OTP button green
-    borderRadius: 15,
-    padding: 6,
+    right: 5,
+    backgroundColor: '#2E7D32',
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 3,
+    borderColor: '#FFF',
+    elevation: 5,
   },
-  form: {
-    width: "100%",
-    marginBottom: 40,
-  },
-  sectionTitle: {
-    fontSize: 14,
-    fontWeight: "700",
-    color: "#888",
-    textTransform: "uppercase",
-    marginBottom: 15,
-    letterSpacing: 1,
-  },
-  inputGroup: {
-    marginBottom: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: "#eee",
-    paddingBottom: 8,
-  },
-  label: {
-    fontSize: 13,
-    color: "#407B60",
-    fontWeight: "600",
-    marginBottom: 4,
-  },
-  inputWrapper: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-  },
-  textInput: {
-    flex: 1,
-    fontSize: 16,
-    color: "#222",
-    paddingVertical: 4,
-    fontWeight: "500",
-  },
-  button: {
-    backgroundColor: "#407B60",
-    width: "100%",
-    paddingVertical: 14,
-    borderRadius: 30,
-    alignItems: "center",
-    alignSelf: "center",
-    // Shadows matching your OTP button
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
+  formContainer: {
+    borderRadius: 20,
+    padding: 20,
+    elevation: 3,
+    shadowColor: '#000',
     shadowOpacity: 0.1,
-    shadowRadius: 3,
-    elevation: 2,
+    shadowRadius: 10,
   },
-  buttonText: {
-    color: "#fff",
-    fontSize: 18,
-    fontWeight: "500",
+  inputLabel: { fontSize: 14, fontWeight: '600', marginBottom: 8, marginTop: 15 },
+  inputWrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderRadius: 12,
+    borderWidth: 1,
+    paddingHorizontal: 15,
+    height: 55,
   },
+  inputIcon: { marginRight: 10 },
+  input: { flex: 1, fontSize: 16 },
+  saveButton: {
+    backgroundColor: '#2E7D32',
+    borderRadius: 15,
+    height: 55,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 35,
+    elevation: 3,
+  },
+  saveButtonText: { fontSize: 18, fontWeight: 'bold', color: '#FFF' },
 });

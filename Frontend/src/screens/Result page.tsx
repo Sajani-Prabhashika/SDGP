@@ -6,213 +6,246 @@ import {
   TouchableOpacity, 
   SafeAreaView, 
   ActivityIndicator,
-  ImageBackground,
-  StatusBar
+  Image,
+  StatusBar,
+  ScrollView,
+  Dimensions,
+  Platform
 } from 'react-native';
+// React Native CLI සඳහා Ionicons
+import Ionicons from 'react-native-vector-icons/Ionicons';
+import { useNavigation } from '@react-navigation/native';
+import { useTheme } from '../ThemeContext';
 
-// Using RN Vector Icons for CLI compatibility
-import Icon from 'react-native-vector-icons/Ionicons';
+const { width } = Dimensions.get('window');
 
 export default function ScanningFinish() {
-  // 1. App State for loading and animation
+  const navigation = useNavigation<any>();
+  const { theme } = useTheme();
+  
   const [isLoading, setIsLoading] = useState(true);
   const [currentPercentage, setCurrentPercentage] = useState(0); 
-  
-  // Final accuracy result from your ML logic
-  const finalResultPercentage = 80; 
+  const confidenceScore = 88; 
 
-  // 2. Simulate ML Model processing time (3 seconds)
+  // Simulation for ML analysis
   useEffect(() => {
-    const loadingTimer = setTimeout(() => {
-      setIsLoading(false);
-    }, 3000); 
-
-    return () => clearTimeout(loadingTimer);
+    const timer = setTimeout(() => setIsLoading(false), 2500);
+    return () => clearTimeout(timer);
   }, []);
 
-  // 3. Percentage counting animation (Triggers after loading)
+  // Animated counter for confidence score
   useEffect(() => {
     if (!isLoading) {
       let counter = 0;
-      const countInterval = setInterval(() => {
+      const interval = setInterval(() => {
         counter += 1;
         setCurrentPercentage(counter);
-
-        if (counter >= finalResultPercentage) {
-          clearInterval(countInterval);
-        }
+        if (counter >= confidenceScore) clearInterval(interval);
       }, 20); 
-
-      return () => clearInterval(countInterval);
+      return () => clearInterval(interval);
     }
-  }, [isLoading, finalResultPercentage]);
+  }, [isLoading]);
 
-  // Loading Screen UI
   if (isLoading) {
     return (
-      <SafeAreaView style={styles.loadingContainer}>
-        <StatusBar barStyle="dark-content" backgroundColor="#FAFAFA" />
-        <ActivityIndicator size="large" color="#1E8449" />
-        <Text style={styles.loadingText}>Analyzing leaf with ML Model...</Text>
-        <Text style={styles.subLoadingText}>Please wait</Text>
+      <SafeAreaView style={[styles.loadingContainer, { backgroundColor: theme.background }]}>
+        <View style={styles.loaderContent}>
+            <ActivityIndicator size="large" color="#437C60" />
+            <Text style={[styles.loadingText, { color: theme.text }]}>Analyzing Plant Health...</Text>
+            <Text style={[styles.subLoadingText, { color: theme.subText }]}>Running ML identification models</Text>
+        </View>
       </SafeAreaView>
     );
   }
 
-  // Result Screen UI
   return (
-    <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="dark-content" backgroundColor="#FAFAFA" />
+    <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
+      <StatusBar barStyle={theme.dark ? "light-content" : "dark-content"} backgroundColor={theme.background} />
       
-      {/* Header section with status icon */}
-      <View style={styles.header}>
-        <Text style={styles.headerText}>Scanning Finish</Text>
-        <Icon name="checkmark-circle" size={24} color="#1E8449" />
-      </View>
-
-      {/* Disease Result Card */}
-      <View style={styles.cardBorder}>
-        <ImageBackground 
-          source={{ uri: 'https://images.unsplash.com/photo-1599940824399-b87987ceb72a?q=80&w=500&auto=format&fit=crop' }} 
-          style={styles.cardBackground}
-          imageStyle={{ opacity: 0.3 }} 
-        >
-          {/* Information Overlay */}
-          <View style={styles.resultOverlay}>
-            
-            {/* Animated Progress Circle */}
-            <View style={styles.circleGraph}>
-              <Text style={styles.percentageText}>{currentPercentage}%</Text>
-            </View>
-
-            {/* Identified Disease Name */}
-            <Text style={styles.diseaseText}>Rough Bark Disease</Text>
-          </View>
-        </ImageBackground>
-      </View>
-
-      {/* Action Buttons */}
-      <View style={styles.buttonsContainer}>
-        <TouchableOpacity style={styles.primaryButton}>
-          <Text style={styles.buttonText}>See Treatment Options</Text>
-        </TouchableOpacity>
-
-        <View style={styles.rowButtons}>
-          <TouchableOpacity style={styles.secondaryButton}>
-            <Text style={styles.buttonText}>Retry</Text>
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
+        
+        {/* --- CUSTOM HEADER --- */}
+        <View style={styles.header}>
+          <TouchableOpacity 
+            style={[styles.headerIcon, { backgroundColor: theme.card }]} 
+            onPress={() => navigation.goBack()}
+          >
+            <Ionicons name="chevron-back" size={24} color={theme.text} />
           </TouchableOpacity>
-
-          <TouchableOpacity style={styles.secondaryButton}>
-            <Text style={styles.buttonText}>Exit</Text>
+          <Text style={[styles.headerTitle, { color: theme.text }]}>Diagnosis Result</Text>
+          <TouchableOpacity style={[styles.headerIcon, { backgroundColor: theme.card }]}>
+            <Ionicons name="share-social-outline" size={22} color={theme.text} />
           </TouchableOpacity>
         </View>
-      </View>
 
+        {/* --- IMAGE SECTION --- */}
+        <View style={styles.imageWrapper}>
+          <Image 
+            source={{ uri: 'https://images.unsplash.com/photo-1599940824399-b87987ceb72a?auto=format&fit=crop&w=800' }} 
+            style={styles.resultImage}
+          />
+          <View style={styles.statusBadge}>
+            <Ionicons name="alert-circle" size={16} color="#FF9800" />
+            <Text style={styles.statusBadgeText}>Issue Detected</Text>
+          </View>
+        </View>
+
+        {/* --- INFO CARD --- */}
+        <View style={[styles.mainCard, { backgroundColor: theme.card }]}>
+          <View style={styles.diagnosisLabelRow}>
+            <Text style={styles.label}>PRIMARY DIAGNOSIS</Text>
+            <View style={styles.badgeSmall}>
+                <Text style={styles.badgeTextSmall}>Fungal</Text>
+            </View>
+          </View>
+          
+          <Text style={[styles.diseaseTitle, { color: theme.text }]}>Rough Bark Disease</Text>
+          
+          <View style={styles.divider} />
+
+          {/* STATS GRID */}
+          <View style={styles.statsContainer}>
+            <View style={styles.statBox}>
+              <View style={[styles.iconCircle, { backgroundColor: 'rgba(67, 124, 96, 0.1)' }]}>
+                <Ionicons name="shield-checkmark" size={26} color="#437C60" />
+              </View>
+              <Text style={[styles.statValue, { color: theme.text }]}>{currentPercentage}%</Text>
+              <Text style={[styles.statLabel, { color: theme.subText }]}>Confidence</Text>
+            </View>
+
+            <View style={styles.statBox}>
+              <View style={[styles.iconCircle, { backgroundColor: 'rgba(255, 152, 0, 0.1)' }]}>
+                <Ionicons name="flame" size={26} color="#FF9800" />
+              </View>
+              <Text style={[styles.statValue, { color: theme.text }]}>Medium</Text>
+              <Text style={[styles.statLabel, { color: theme.subText }]}>Severity</Text>
+            </View>
+          </View>
+
+          {/* DESCRIPTION */}
+          <View style={[styles.descriptionBox, { backgroundColor: theme.background }]}>
+            <Text style={[styles.descriptionText, { color: theme.text }]}>
+              Early symptoms of bark cracking and unusual texture observed. This typically occurs due to nutrient imbalance or fungal infection.
+            </Text>
+          </View>
+        </View>
+
+        {/* --- ACTION BUTTONS --- */}
+        <View style={styles.buttonWrapper}>
+          <TouchableOpacity 
+            style={styles.primaryBtn}
+            onPress={() => navigation.navigate('TreatmentOptions')} // ඔයාගේ Treatment page එකට link කරන්න
+          >
+            <Text style={styles.primaryBtnText}>See Treatment Options</Text>
+            <Ionicons name="medical" size={20} color="#FFF" style={{marginLeft: 10}} />
+          </TouchableOpacity>
+
+          <View style={styles.secondaryRow}>
+            <TouchableOpacity 
+               style={[styles.secondaryBtn, { backgroundColor: theme.card, borderColor: '#437C60' }]}
+               onPress={() => navigation.navigate('Scan')}
+            >
+              <Ionicons name="camera-reverse-outline" size={22} color="#437C60" />
+              <Text style={styles.secondaryBtnTextGreen}>Retake</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity 
+               style={[styles.secondaryBtn, { backgroundColor: theme.card, borderColor: '#EEE' }]}
+               onPress={() => navigation.navigate('Home')}
+            >
+              <Ionicons name="home-outline" size={22} color={theme.subText} />
+              <Text style={[styles.secondaryBtnText, { color: theme.subText }]}>Exit</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+        
+      </ScrollView>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  loadingContainer: {
-    flex: 1,
-    backgroundColor: '#FAFAFA',
-    justifyContent: 'center',
-    alignItems: 'center',
+  container: { flex: 1 },
+  scrollContent: { paddingBottom: 40 },
+  loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  loaderContent: { alignItems: 'center' },
+  loadingText: { marginTop: 20, fontSize: 18, fontWeight: 'bold' },
+  subLoadingText: { marginTop: 8, fontSize: 14, opacity: 0.6 },
+  
+  header: { 
+    flexDirection: 'row', 
+    justifyContent: 'space-between', 
+    alignItems: 'center', 
+    paddingHorizontal: 20,
+    paddingVertical: 15
   },
-  loadingText: {
-    marginTop: 20,
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#333',
-  },
-  subLoadingText: {
-    marginTop: 5,
-    fontSize: 14,
-    color: '#666',
-  },
-  container: {
-    flex: 1,
-    backgroundColor: '#FAFAFA',
-    alignItems: 'center',
-    paddingTop: 40,
-  },
-  header: {
+  headerIcon: { width: 45, height: 45, borderRadius: 15, justifyContent: 'center', alignItems: 'center', elevation: 2 },
+  headerTitle: { fontSize: 18, fontWeight: 'bold' },
+
+  imageWrapper: { paddingHorizontal: 20, marginTop: 10, position: 'relative' },
+  resultImage: { width: '100%', height: 280, borderRadius: 30 },
+  statusBadge: {
+    position: 'absolute',
+    bottom: 20,
+    right: 40,
+    backgroundColor: 'rgba(255, 255, 255, 0.95)',
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 30,
+    paddingHorizontal: 15,
+    paddingVertical: 8,
+    borderRadius: 20,
+    ...Platform.select({ android: { elevation: 5 }, ios: { shadowOpacity: 0.2 } })
   },
-  headerText: {
-    fontSize: 18,
-    color: '#000',
-    marginRight: 5,
-    fontWeight: '600',
+  statusBadgeText: { fontSize: 12, fontWeight: 'bold', marginLeft: 5, color: '#000' },
+
+  mainCard: {
+    margin: 20,
+    borderRadius: 35,
+    padding: 25,
+    marginTop: -30,
+    elevation: 10,
+    shadowColor: '#000',
+    shadowOpacity: 0.1,
+    shadowRadius: 15,
   },
-  cardBorder: {
-    width: '85%',
-    height: 400,
-    borderColor: '#1E8449', 
-    borderWidth: 3,
-    borderRadius: 15,
-    overflow: 'hidden', 
-    backgroundColor: '#E8F5E9',
-  },
-  cardBackground: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  resultOverlay: {
-    backgroundColor: 'white',
-    width: '100%',
-    paddingVertical: 40,
-    alignItems: 'center',
-    elevation: 3, // Android shadow effect
-  },
-  circleGraph: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-    borderColor: '#942949', 
-    borderWidth: 8,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 20,
-  },
-  percentageText: {
-    fontSize: 28,
-    fontWeight: '900',
-    color: '#FF3B30',
-  },
-  diseaseText: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#000',
-  },
-  buttonsContainer: {
-    width: '85%',
-    marginTop: 30,
-  },
-  primaryButton: {
-    backgroundColor: '#A5E0A7', 
-    paddingVertical: 15,
-    borderRadius: 25,
-    alignItems: 'center',
-    marginBottom: 15,
-  },
-  rowButtons: {
+  diagnosisLabelRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  label: { fontSize: 11, color: '#999', fontWeight: 'bold', letterSpacing: 1.2 },
+  badgeSmall: { backgroundColor: 'rgba(67, 124, 96, 0.1)', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 10 },
+  badgeTextSmall: { color: '#437C60', fontSize: 10, fontWeight: 'bold' },
+  diseaseTitle: { fontSize: 26, fontWeight: '800', marginTop: 8 },
+  divider: { height: 1, backgroundColor: 'rgba(0,0,0,0.05)', marginVertical: 20 },
+  
+  statsContainer: { flexDirection: 'row', justifyContent: 'space-around', marginBottom: 25 },
+  statBox: { alignItems: 'center' },
+  iconCircle: { width: 55, height: 55, borderRadius: 20, justifyContent: 'center', alignItems: 'center', marginBottom: 10 },
+  statValue: { fontSize: 20, fontWeight: 'bold' },
+  statLabel: { fontSize: 12, marginTop: 2 },
+
+  descriptionBox: { padding: 18, borderRadius: 20 },
+  descriptionText: { textAlign: 'center', fontSize: 14, lineHeight: 22, fontStyle: 'italic' },
+
+  buttonWrapper: { paddingHorizontal: 20, marginTop: 10 },
+  primaryBtn: {
+    backgroundColor: '#437C60',
     flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-  secondaryButton: {
-    backgroundColor: '#A5E0A7', 
-    paddingVertical: 15,
-    borderRadius: 25,
+    justifyContent: 'center',
     alignItems: 'center',
-    width: '48%', 
+    paddingVertical: 18,
+    borderRadius: 22,
+    elevation: 4,
   },
-  buttonText: {
-    color: '#000',
-    fontSize: 16,
-    fontWeight: 'bold',
-  }
+  primaryBtnText: { color: '#FFF', fontSize: 16, fontWeight: 'bold' },
+  
+  secondaryRow: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 15 },
+  secondaryBtn: {
+    width: '48%',
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 16,
+    borderRadius: 20,
+    borderWidth: 1.5,
+  },
+  secondaryBtnTextGreen: { color: '#437C60', fontWeight: 'bold', marginLeft: 8 },
+  secondaryBtnText: { fontWeight: 'bold', marginLeft: 8 }
 });
