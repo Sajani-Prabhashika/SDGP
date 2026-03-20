@@ -15,7 +15,7 @@ import SignUpPage from './src/screens/Signup';
 import ResultPage from './src/screens/Result page';
 import Chatbot from './src/screens/chatbot';  
 import CommunityScreen from './src/screens/CommunityScreen';
-
+import './src/i18n';
 
  
 
