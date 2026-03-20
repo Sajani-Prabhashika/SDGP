@@ -9,6 +9,7 @@ import CalendarScreen from './src/screens/calander';
 import ScanScreen from './src/screens/Scanpage';
 import NotificationsScreen from './src/screens/Notification'; 
 import ProfileScreen from './src/screens/ProfileScreen';
+<import EditProfileScreen from './src/screens/EditProfileScreen'; 
 
 
  
@@ -32,6 +33,9 @@ export default function App() {
           <Tab.Screen name="Scan" component={ScanScreen} />
           <Tab.Screen name="Notification" component={NotificationsScreen} />
           <Tab.Screen name="Profile" component={ProfileScreen} />
+          
+          <Tab.Screen name="EditProfile" component={EditProfileScreen} />
+          
           
           
         </Tab.Navigator>
