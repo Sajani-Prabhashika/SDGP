@@ -6,9 +6,11 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 // Screen Imports
 import HomeScreen from './src/screens/homePage'; 
 import CalendarScreen from './src/screens/calander';
-import ScanScreen from './src/screens/Scanpage'; 
-
-
+import ScanScreen from './src/screens/Scanpage';
+import NotificationsScreen from './src/screens/Notification'; 
+import ProfileScreen from './src/screens/ProfileScreen';
+import EditProfileScreen from './src/screens/EditProfileScreen'; 
+import LoginPage from './src/screens/LoginPage';
 
  
 
@@ -29,7 +31,11 @@ export default function App() {
           <Tab.Screen name="Home" component={HomeScreen} />
           <Tab.Screen name="Calendar" component={CalendarScreen} />
           <Tab.Screen name="Scan" component={ScanScreen} />
-
+          <Tab.Screen name="Notification" component={NotificationsScreen} />
+          <Tab.Screen name="Profile" component={ProfileScreen} />
+          <Tab.Screen name="EditProfile" component={EditProfileScreen} />
+          <Tab.Screen name="Login" component={LoginPage} />
+          
           
           
         </Tab.Navigator>
