@@ -31,3 +31,8 @@ It also includes a geospatial alert system to notify nearby farmers about diseas
 #### API & Communication
 - Postman (API)
 - Requests
+  
+#### Utilities & System
+- OS
+- Datetime (time handling)
+- Treading (backend tasks)
