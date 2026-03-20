@@ -17,3 +17,8 @@ It also includes a geospatial alert system to notify nearby farmers about diseas
 #### Core Framework
 - Flask (Python)
 - Flask-CORS
+
+#### Machine Learning
+- TensorFlow (CNN model)
+- NumPy (data processing)
+- Pillow (PIL) (image handling)
