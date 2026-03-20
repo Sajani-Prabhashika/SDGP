@@ -5,9 +5,11 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 
 // Screen Imports
 import HomeScreen from './src/screens/homePage'; 
+import CalendarScreen from './src/screens/calander';
 
 
-import EditProfileScreen from './src/screens/EditProfileScreen'; 
+
+ 
 
 const Tab = createBottomTabNavigator();
 
@@ -24,6 +26,8 @@ export default function App() {
           }}
         >
           <Tab.Screen name="Home" component={HomeScreen} />
+          <Tab.Screen name="Calendar" component={CalendarScreen} />
+
           
           
         </Tab.Navigator>
