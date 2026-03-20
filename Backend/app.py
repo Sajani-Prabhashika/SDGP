@@ -25,3 +25,9 @@ db = firestore.client()
 
 app = Flask(__name__)
 CORS(app) 
+
+# Twilio Credentials (Use your actual SID and Token)
+TWILIO_ACCOUNT_SID = 'your_account_sid'
+TWILIO_AUTH_TOKEN = 'your_auth_token'
+TWILIO_NUMBER = '+1234567890'
+client = Client(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN)
