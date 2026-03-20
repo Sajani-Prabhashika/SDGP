@@ -13,6 +13,7 @@ import EditProfileScreen from './src/screens/EditProfileScreen';
 import LoginPage from './src/screens/LoginPage';
 import SignUpPage from './src/screens/Signup';
 import ResultPage from './src/screens/Result page';
+import Chatbot from './src/screens/chatbot';  
 
 
  
@@ -40,7 +41,7 @@ export default function App() {
           <Tab.Screen name="Login" component={LoginPage} />
           <Tab.Screen name="SignUp" component={SignUpPage} />
           <Tab.Screen name="Result" component={ResultPage} />
-          
+          <Tab.Screen name="Chatbot" component={Chatbot} />
           
           
           
