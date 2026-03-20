@@ -1,21 +1,16 @@
-from flask import Flask, jsonify
+import time
+import threading
+import random
+from flask import Flask, request, jsonify
 from flask_cors import CORS
-from routes.prediction import prediction_bp
-
-#Setup the Flask app (Backend)
-
-
-# 1. Initialize Firebase with 'firebase_config.json' files
-cred = credentials.Certificate("firebase_config.json")
-
-try:
-    firebase_admin.initialize_app(cred, {
-        'storageBucket': 'terrasdgp.firebasestorage.app' # Your Project ID
-    })
-    db = firestore.client()
-    bucket = storage.bucket()
-    print("--- Firebase Firestore & Storage Connected Successfully ---")
-except Exception as e:
-    print(f"--- Firebase Connection Warning: {e} ---")
-    db = firestore.client()
-    bucket = None
+import requests
+import io
+import os
+import numpy as np
+from PIL import Image
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2' # Suppress TF warnings
+import tensorflow as tf
+import firebase_admin
+from firebase_admin import credentials, firestore, auth
+from datetime import datetime, timedelta, timezone
+from twilio.rest import Client
