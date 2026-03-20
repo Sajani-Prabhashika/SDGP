@@ -36,3 +36,6 @@ It also includes a geospatial alert system to notify nearby farmers about diseas
 - OS
 - Datetime (time handling)
 - Treading (backend tasks)
+  
+#### Notification /  Alerts
+- Twilio (SMS / communication services)
