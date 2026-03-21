@@ -42,7 +42,14 @@ It also includes a geospatial alert system to notify nearby farmers about diseas
 
 ## Installation
 
-1. Clone this repository: 
+1. Clone this repository:
+   
 ```bash
 git clone https://github.com/your-username/your-repo-name.git
+```
+
+2. 
+
+```bash
+
 ```
