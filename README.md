@@ -41,3 +41,5 @@ It also includes a geospatial alert system to notify nearby farmers about diseas
 - Firebase (SMS / communication services)
 
 ## Installation
+```bash
+git clone https://github.com/your-username/your-repo-name.git
