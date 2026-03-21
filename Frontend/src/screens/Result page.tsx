@@ -12,7 +12,6 @@ import {
   Dimensions,
   Platform
 } from 'react-native';
-// React Native CLI සඳහා Ionicons
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { useNavigation } from '@react-navigation/native';
 import { useTheme } from '../ThemeContext';
@@ -25,15 +24,31 @@ export default function ScanningFinish() {
   
   const [isLoading, setIsLoading] = useState(true);
   const [currentPercentage, setCurrentPercentage] = useState(0); 
+  const [uploadProgress, setUploadProgress] = useState(0); // New state for Progress Bar
   const confidenceScore = 88; 
 
-  // Simulation for ML analysis
+  // Simulation for ML analysis with Progress Bar update
   useEffect(() => {
+    // Increment progress bar over 2.5 seconds
+    const interval = setInterval(() => {
+      setUploadProgress((prev) => {
+        if (prev >= 1) {
+          clearInterval(interval);
+          return 1;
+        }
+        return prev + 0.01; 
+      });
+    }, 22);
+
     const timer = setTimeout(() => setIsLoading(false), 2500);
-    return () => clearTimeout(timer);
+    
+    return () => {
+      clearTimeout(timer);
+      clearInterval(interval);
+    };
   }, []);
 
-  // Animated counter for confidence score
+  // Animated counter for confidence score (runs after loading)
   useEffect(() => {
     if (!isLoading) {
       let counter = 0;
@@ -53,6 +68,11 @@ export default function ScanningFinish() {
             <ActivityIndicator size="large" color="#437C60" />
             <Text style={[styles.loadingText, { color: theme.text }]}>Analyzing Plant Health...</Text>
             <Text style={[styles.subLoadingText, { color: theme.subText }]}>Running ML identification models</Text>
+            
+            {/* --- NEW PROGRESS BAR UI --- */}
+            <View style={[styles.progressBarBackground, { backgroundColor: theme.dark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)' }]}>
+                <View style={[styles.progressBarFill, { width: `${uploadProgress * 100}%` }]} />
+            </View>
         </View>
       </SafeAreaView>
     );
@@ -92,12 +112,12 @@ export default function ScanningFinish() {
 
         {/* --- INFO CARD --- */}
         <View style={[styles.mainCard, { backgroundColor: theme.card }]}>
-          <View style={styles.diagnosisLabelRow}>
+          <div style={styles.diagnosisLabelRow}>
             <Text style={styles.label}>PRIMARY DIAGNOSIS</Text>
             <View style={styles.badgeSmall}>
                 <Text style={styles.badgeTextSmall}>Fungal</Text>
             </View>
-          </View>
+          </div>
           
           <Text style={[styles.diseaseTitle, { color: theme.text }]}>Rough Bark Disease</Text>
           
@@ -134,7 +154,7 @@ export default function ScanningFinish() {
         <View style={styles.buttonWrapper}>
           <TouchableOpacity 
             style={styles.primaryBtn}
-            onPress={() => navigation.navigate('TreatmentOptions')} // ඔයාගේ Treatment page එකට link කරන්න
+            onPress={() => navigation.navigate('TreatmentOptions')} 
           >
             <Text style={styles.primaryBtnText}>See Treatment Options</Text>
             <Ionicons name="medical" size={20} color="#FFF" style={{marginLeft: 10}} />
@@ -172,6 +192,20 @@ const styles = StyleSheet.create({
   loadingText: { marginTop: 20, fontSize: 18, fontWeight: 'bold' },
   subLoadingText: { marginTop: 8, fontSize: 14, opacity: 0.6 },
   
+  // Progress Bar Styles
+  progressBarBackground: {
+    width: width * 0.65,
+    height: 8,
+    borderRadius: 4,
+    marginTop: 30,
+    overflow: 'hidden',
+  },
+  progressBarFill: {
+    height: '100%',
+    backgroundColor: '#437C60',
+    borderRadius: 4,
+  },
+
   header: { 
     flexDirection: 'row', 
     justifyContent: 'space-between', 
