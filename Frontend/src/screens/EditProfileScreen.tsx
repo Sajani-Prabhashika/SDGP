@@ -9,6 +9,7 @@ import {
   TextInput,
   SafeAreaView,
   Keyboard,
+  Alert, // Added Alert for a more native feel
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 
@@ -19,19 +20,41 @@ const EditProfileScreen = () => {
   const [location, setLocation] = useState("Galle");
 
   // Refs for focusing inputs
-  const nameRef = useRef(null);
-  const emailRef = useRef(null);
-  const birthdateRef = useRef(null);
-  const locationRef = useRef(null);
+  const nameRef = useRef<TextInput>(null);
+  const emailRef = useRef<TextInput>(null);
+  const birthdateRef = useRef<TextInput>(null);
+  const locationRef = useRef<TextInput>(null);
 
+  // --- DATA INTEGRITY VALIDATION ---
   const handleSave = () => {
+    // 1. Name Validation (Ensure it's not empty or just spaces)
+    if (!name.trim()) {
+      Alert.alert("Validation Error", "Full Name cannot be empty.");
+      return;
+    }
+
+    // 2. Email Validation (Regex for standard email format)
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email.trim())) {
+      Alert.alert("Validation Error", "Please enter a valid email address.");
+      return;
+    }
+
+    // 3. Location Validation (Optional but good for integrity)
+    if (!location.trim()) {
+      Alert.alert("Validation Error", "Please provide a location.");
+      return;
+    }
+
+    // Success Logic
     Keyboard.dismiss();
-    alert("Profile Updated Successfully!");
+    console.log("Data Sent to API:", { name, email, birthdate, location });
+    Alert.alert("Profile Updated", "Your changes have been saved successfully!");
   };
 
   return (
     <SafeAreaView style={styles.container}>
-      <ScrollView contentContainerStyle={styles.scrollContent}>
+      <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
         
         {/* Header Section */}
         <View style={styles.header}>
@@ -42,10 +65,11 @@ const EditProfileScreen = () => {
         <View style={styles.imageContainer}>
           <View style={styles.imageWrapper}>
             <Image
-              source={{ uri: "" }}
+              // Using a professional UI avatar placeholder for the demo
+              source={{ uri: `https://ui-avatars.com/api/?name=${name}&background=C5E1A5&color=407B60` }}
               style={styles.profileImage}
             />
-            <TouchableOpacity style={styles.cameraIcon}>
+            <TouchableOpacity style={styles.cameraIcon} activeOpacity={0.7}>
               <Ionicons name="camera" size={18} color="#fff" />
             </TouchableOpacity>
           </View>
@@ -61,6 +85,7 @@ const EditProfileScreen = () => {
                 style={styles.textInput}
                 value={name}
                 onChangeText={setName}
+                placeholder="Enter full name"
               />
               <TouchableOpacity onPress={() => nameRef.current?.focus()}>
                 <Ionicons name="pencil" size={16} color="#3A7D58" />
@@ -80,6 +105,7 @@ const EditProfileScreen = () => {
                 onChangeText={setEmail}
                 keyboardType="email-address"
                 autoCapitalize="none"
+                placeholder="example@mail.com"
               />
               <TouchableOpacity onPress={() => emailRef.current?.focus()}>
                 <Ionicons name="pencil" size={16} color="#3A7D58" />
@@ -95,6 +121,7 @@ const EditProfileScreen = () => {
                 style={styles.textInput}
                 value={birthdate}
                 onChangeText={setBirthdate}
+                placeholder="DD-MM-YYYY"
               />
               <TouchableOpacity onPress={() => birthdateRef.current?.focus()}>
                 <Ionicons name="pencil" size={16} color="#3A7D58" />
@@ -110,6 +137,7 @@ const EditProfileScreen = () => {
                 style={styles.textInput}
                 value={location}
                 onChangeText={setLocation}
+                placeholder="City, Country"
               />
               <TouchableOpacity onPress={() => locationRef.current?.focus()}>
                 <Ionicons name="pencil" size={16} color="#3A7D58" />
@@ -118,8 +146,8 @@ const EditProfileScreen = () => {
           </View>
         </View>
 
-        {/* Save Button - Styled like OTP Verify Button */}
-        <TouchableOpacity style={styles.button} onPress={handleSave}>
+        {/* Save Button */}
+        <TouchableOpacity style={styles.button} onPress={handleSave} activeOpacity={0.8}>
           <Text style={styles.buttonText}>Save Changes</Text>
         </TouchableOpacity>
 
@@ -131,100 +159,20 @@ const EditProfileScreen = () => {
 export default EditProfileScreen;
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#fff",
-  },
-  scrollContent: {
-    paddingHorizontal: 30,
-    paddingBottom: 40,
-  },
-  header: {
-    alignItems: "center",
-    marginTop: 40,
-    marginBottom: 30,
-  },
-  title: {
-    fontSize: 22,
-    fontWeight: "600",
-    color: "#222",
-  },
-  imageContainer: {
-    alignItems: "center",
-    marginBottom: 40,
-  },
-  imageWrapper: {
-    position: "relative",
-  },
-  profileImage: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-    backgroundColor: "#C5E1A5", // Matching OTP box light green
-    borderWidth: 2,
-    borderColor: "#81C784",
-  },
-  cameraIcon: {
-    position: "absolute",
-    bottom: 0,
-    right: 0,
-    backgroundColor: "#407B60", // Matching OTP button green
-    borderRadius: 15,
-    padding: 6,
-  },
-  form: {
-    width: "100%",
-    marginBottom: 40,
-  },
-  sectionTitle: {
-    fontSize: 14,
-    fontWeight: "700",
-    color: "#888",
-    textTransform: "uppercase",
-    marginBottom: 15,
-    letterSpacing: 1,
-  },
-  inputGroup: {
-    marginBottom: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: "#eee",
-    paddingBottom: 8,
-  },
-  label: {
-    fontSize: 13,
-    color: "#407B60",
-    fontWeight: "600",
-    marginBottom: 4,
-  },
-  inputWrapper: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-  },
-  textInput: {
-    flex: 1,
-    fontSize: 16,
-    color: "#222",
-    paddingVertical: 4,
-    fontWeight: "500",
-  },
-  button: {
-    backgroundColor: "#407B60",
-    width: "100%",
-    paddingVertical: 14,
-    borderRadius: 30,
-    alignItems: "center",
-    alignSelf: "center",
-    // Shadows matching your OTP button
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 3,
-    elevation: 2,
-  },
-  buttonText: {
-    color: "#fff",
-    fontSize: 18,
-    fontWeight: "500",
-  },
+  container: { flex: 1, backgroundColor: "#fff" },
+  scrollContent: { paddingHorizontal: 30, paddingBottom: 40 },
+  header: { alignItems: "center", marginTop: 40, marginBottom: 30 },
+  title: { fontSize: 22, fontWeight: "600", color: "#222" },
+  imageContainer: { alignItems: "center", marginBottom: 40 },
+  imageWrapper: { position: "relative" },
+  profileImage: { width: 100, height: 100, borderRadius: 50, backgroundColor: "#C5E1A5", borderWidth: 2, borderColor: "#81C784" },
+  cameraIcon: { position: "absolute", bottom: 0, right: 0, backgroundColor: "#407B60", borderRadius: 15, padding: 6 },
+  form: { width: "100%", marginBottom: 40 },
+  sectionTitle: { fontSize: 14, fontWeight: "700", color: "#888", textTransform: "uppercase", marginBottom: 15, letterSpacing: 1 },
+  inputGroup: { marginBottom: 20, borderBottomWidth: 1, borderBottomColor: "#eee", paddingBottom: 8 },
+  label: { fontSize: 13, color: "#407B60", fontWeight: "600", marginBottom: 4 },
+  inputWrapper: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
+  textInput: { flex: 1, fontSize: 16, color: "#222", paddingVertical: 4, fontWeight: "500" },
+  button: { backgroundColor: "#407B60", width: "100%", paddingVertical: 14, borderRadius: 30, alignItems: "center", elevation: 2, shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 3 },
+  buttonText: { color: "#fff", fontSize: 18, fontWeight: "500" },
 });
