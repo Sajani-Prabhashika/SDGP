@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, SafeAreaView } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, SafeAreaView, StatusBar } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { useNavigation } from '@react-navigation/native';
 import { useTheme } from '../ThemeContext';
@@ -8,8 +8,13 @@ export default function NotificationScreen() {
   const navigation = useNavigation<any>();
   const { theme } = useTheme();
 
+  // Teera Brand Colors
+  const primaryGreen = "#437C60";
+  const lightGreenBg = "#E8F5E9"; // Soft botanical green tint
+
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
+      <StatusBar barStyle={theme.dark ? "light-content" : "dark-content"} />
       
       {/* --- Top Header --- */}
       <View style={[styles.topHeader, { backgroundColor: theme.card, borderColor: theme.border }]}>
@@ -26,18 +31,22 @@ export default function NotificationScreen() {
           style={styles.profileIcon}
           onPress={() => navigation.navigate('Profile')} 
         >
-          <Ionicons name="person-circle-outline" size={30} color="#2E7D32" />
+          <Ionicons name="person-circle-outline" size={30} color={primaryGreen} />
         </TouchableOpacity>
       </View>
 
       {/* --- Content Section --- */}
       <View style={styles.content}>
-        <View style={[styles.iconCircle, { backgroundColor: theme.card }]}>
-          <Ionicons name="notifications-outline" size={60} color={theme.subText} />
+        {/* Updated Circle and Icon Colors */}
+        <View style={[styles.iconCircle, { backgroundColor: theme.dark ? '#1B2E22' : lightGreenBg }]}>
+          <Ionicons name="notifications-outline" size={60} color={primaryGreen} />
         </View>
+        
         <Text style={[styles.emptyTitle, { color: theme.text }]}>No new notifications</Text>
-        <Text style={[styles.emptySubtitle, { color: theme.subText }]}>
-          We'll notify you when something arrives!
+        
+        {/* Updated Subtitle with a hint of green-gray */}
+        <Text style={[styles.emptySubtitle, { color: theme.dark ? '#A5D6A7' : '#556B5D' }]}>
+          We'll notify you when your plants need water or someone interacts with your posts.
         </Text>
       </View>
     </SafeAreaView>
@@ -45,9 +54,7 @@ export default function NotificationScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
+  container: { flex: 1 },
   topHeader: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -55,27 +62,15 @@ const styles = StyleSheet.create({
     paddingHorizontal: 15,
     paddingVertical: 12,
     borderBottomWidth: 1,
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 3,
   },
-  backButton: {
-    padding: 5,
-  },
-  pageTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-  },
-  profileIcon: {
-    padding: 5,
-  },
+  backButton: { padding: 5 },
+  pageTitle: { fontSize: 18, fontWeight: '700' },
+  profileIcon: { padding: 5 },
   content: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingHorizontal: 40,
+    paddingHorizontal: 50,
   },
   iconCircle: {
     width: 120,
