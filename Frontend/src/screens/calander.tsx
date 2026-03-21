@@ -45,39 +45,54 @@ export default function CalendarScreen() {
     return marked;
   }, [selectedDate, reminders]);
 
+  // --- FIXED INPUT VALIDATION LOGIC ---
   const handleSaveReminder = () => {
+    // 1. Check if a date is actually picked
     if (!selectedDate) {
-      Alert.alert("Error", "Please select a date.");
-      return;
-    }
-    if (!remName.trim()) {
-      Alert.alert("Error", "Please enter a reminder title.");
+      Alert.alert("Date Required", "Please tap a date on the calendar first.");
       return;
     }
 
+    // 2. Check if the title is empty or just whitespace
+    if (!remName.trim()) {
+      Alert.alert("Title Required", "Please enter a name for this reminder.");
+      return;
+    }
+
+    // 3. Prevent duplicate exact reminders for the same day (Optional but helpful)
+    if (reminders[selectedDate] && reminders[selectedDate].name === remName.trim()) {
+      Alert.alert("Duplicate", "A reminder with this name already exists for this date.");
+      return;
+    }
+
+    // Save logic
     setReminders((prev: any) => ({
       ...prev,
-      [selectedDate]: { name: remName, desc: remDesc },
+      [selectedDate]: { name: remName.trim(), desc: remDesc.trim() },
     }));
 
+    // Clear inputs and selection after success
     setRemName('');
     setRemDesc('');
-    Alert.alert("Saved", `Reminder set for ${selectedDate}`);
+    setSelectedDate(''); // Resetting date prevents accidental double-submits
+    Alert.alert("Success", `Reminder saved for ${selectedDate}`);
   };
 
-  // Hardcode background to match your profile screen dark mode perfectly
   const screenBgColor = isDark ? '#121212' : '#F0F9F1';
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: screenBgColor }]}>
+      <SafeAreaView style={[styles.container, { backgroundColor: screenBgColor }]}>
       <StatusBar barStyle={isDark ? "light-content" : "dark-content"} backgroundColor={screenBgColor} />
       <KeyboardAvoidingView 
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         style={{ flex: 1 }}
       >
-        <ScrollView contentContainerStyle={{ alignItems: 'center', paddingBottom: 40 }} showsVerticalScrollIndicator={false}>
+        <ScrollView 
+          contentContainerStyle={{ alignItems: 'center', paddingBottom: 40 }} 
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled" // Improved UX for clicking buttons while typing
+        >
           
-          {/* --- Header with Back Button --- */}
           <View style={styles.headerContainer}>
             <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
               <Ionicons name="arrow-back" size={26} color={theme.text} />
@@ -110,7 +125,7 @@ export default function CalendarScreen() {
 
           <View style={styles.formContainer}>
             <Text style={[styles.label, { color: theme.text }]}>
-              Selected: <Text style={{ color: '#2E7D32' }}>{selectedDate || 'Select a date'}</Text>
+              Selected: <Text style={{ color: '#2E7D32' }}>{selectedDate || 'Tap a date above'}</Text>
             </Text>
             
             <TextInput
@@ -119,9 +134,10 @@ export default function CalendarScreen() {
               value={remName}
               onChangeText={setRemName}
               placeholderTextColor={theme.subText}
+              returnKeyType="next"
             />
 
-            <TextInput
+        <TextInput
               style={[styles.input, styles.textArea, { backgroundColor: theme.card, borderColor: theme.border, color: theme.text }]}
               placeholder="Description (optional)"
               value={remDesc}
@@ -131,7 +147,10 @@ export default function CalendarScreen() {
               placeholderTextColor={theme.subText}
             />
 
-            <TouchableOpacity style={styles.button} onPress={handleSaveReminder}>
+            <TouchableOpacity 
+              style={[styles.button, { opacity: (!selectedDate || !remName.trim()) ? 0.7 : 1 }]} 
+              onPress={handleSaveReminder}
+            >
               <Text style={styles.buttonText}>Save Reminder</Text>
             </TouchableOpacity>
           </View>
@@ -144,7 +163,6 @@ export default function CalendarScreen() {
                 <Text style={[styles.emptyText, { color: theme.subText }]}>No reminders set yet.</Text>
               </View>
             ) : (
-              /* --- The Fixed Line is Below! No extra bracket --- */
               Object.keys(reminders).sort().map((date) => (
                 <View key={date} style={[styles.reminderCard, { backgroundColor: theme.card, borderColor: theme.border }]}>
                   <View style={styles.cardHeader}>
