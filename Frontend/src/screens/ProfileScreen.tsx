@@ -1,334 +1,254 @@
-import React, { useState } from "react";
-import {
-  View,
-  Text,
-  StyleSheet,
-  Image,
-  TouchableOpacity,
-  SafeAreaView,
+import React, { useState } from 'react';
+import { 
+  StyleSheet, 
+  Text, 
+  View, 
+  SafeAreaView, 
+  TouchableOpacity, 
   ScrollView,
-  Modal,
-  TouchableWithoutFeedback,
-} from "react-native";
-import { Ionicons, Feather, MaterialIcons } from "@expo/vector-icons";
+  StatusBar
+} from 'react-native';
+import Ionicons from 'react-native-vector-icons/Ionicons';
+import { useNavigation, CommonActions } from '@react-navigation/native';
+import { useTheme } from '../ThemeContext';
 
-const ProfileScreen = () => {
-  const [langModalVisible, setLangModalVisible] = useState(false);
-  const [selectedLang, setSelectedLang] = useState("English");
+// Translations & Storage
+import { useTranslation } from 'react-i18next';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
-  const languages = [
-    { label: "English", value: "English" },
-    { label: "සිංහල", value: "Sinhala" },
-  ];
+const ProfileScreen: React.FC = () => {
+  const navigation = useNavigation<any>();
+  const { theme, isDark, toggleTheme } = useTheme(); 
+  const { t, i18n } = useTranslation();
 
-  const selectLanguage = (lang) => { 
-    setSelectedLang(lang);
-    setLangModalVisible(false);
+  // State for our custom Dropdowns
+  const [showThemeDrop, setShowThemeDrop] = useState(false);
+  const [showLangDrop, setShowLangDrop] = useState(false);
+
+  // Hardcode the background so it actually goes fully dark!
+  const screenBgColor = isDark ? '#121212' : '#F0F9F1';
+
+  const handleLogout = () => {
+    navigation.dispatch(
+      CommonActions.reset({
+        index: 0,
+        routes: [{ name: 'Login' }],
+      })
+    );
+  };
+
+  // Dropdown Action: Change Language
+  const handleLanguageSelect = async (lang: string) => {
+    if (i18n.language !== lang) {
+      i18n.changeLanguage(lang);
+      try {
+        await AsyncStorage.setItem('user-language', lang);
+      } catch (error) {
+        console.error("Error saving language", error);
+      }
+    }
+    setShowLangDrop(false); // Close dropdown
+  };
+
+  // Dropdown Action: Change Theme
+  const handleThemeSelect = (selectDark: boolean) => {
+    if (isDark !== selectDark) {
+      toggleTheme();
+    }
+    setShowThemeDrop(false); // Close dropdown
   };
 
   return (
-    <SafeAreaView style={styles.container}>
-      <ScrollView contentContainerStyle={{ paddingBottom: 100 }}>
+    <SafeAreaView style={[styles.container, { backgroundColor: screenBgColor }]}>
+      <StatusBar barStyle={isDark ? "light-content" : "dark-content"} backgroundColor={screenBgColor} />
+      
+      <ScrollView contentContainerStyle={styles.scrollContainer} showsVerticalScrollIndicator={false}>
         
-        {/* Header */}
+        {/* --- Header with Back Button --- */}
         <View style={styles.header}>
-          <TouchableOpacity>
-            <Ionicons name="arrow-back" size={24} color="#222" />
-          </TouchableOpacity>
-          <Text style={styles.headerTitle}>My Profile</Text>
-          <View style={{ width: 24 }} />
-        </View>
-
-        {/* Profile Card */}
-        <View style={styles.profileCard}>
-          <View style={styles.imageWrapper}>
-            <Image
-              source={{ uri: "" }}
-              style={styles.profileImage}
-            />
-          </View>
-          <Text style={styles.name}>Wasantha Ranasinghe</Text>
-          <Text style={styles.email}>wasantha@gmail.com</Text>
-          <TouchableOpacity style={styles.editButton}>
-            <Text style={styles.editText}>Edit Profile</Text>
-          </TouchableOpacity>
-        </View>
-
-        {/* Options Section */}
-        <View style={styles.optionsSection}>
-          
-          {/* Language Row with Dropdown Trigger */}
           <TouchableOpacity 
-            style={styles.optionRow} 
-            onPress={() => setLangModalVisible(true)}
+            onPress={() => navigation.goBack()} 
+            style={styles.backButton}
           >
-            <View style={styles.optionLeft}>
-              <View style={styles.iconCircle}>
-                <Ionicons name="globe-outline" size={20} color="#407B60" />
+            <Ionicons name="arrow-back" size={26} color={theme.text} />
+          </TouchableOpacity>
+          <Text style={[styles.headerTitle, { color: theme.text }]}>{t('profileTitle')}</Text>
+          <View style={{ width: 26 }} /> {/* Empty view to keep title centered */}
+        </View>
+
+        {/* --- Profile Info Card --- */}
+        <View style={[styles.profileCard, { backgroundColor: theme.card }]}>
+          <View style={styles.avatarContainer}>
+            <Ionicons name="person" size={40} color="#FFF" />
+          </View>
+          <Text style={[styles.userName, { color: theme.text }]}>Plant Lover</Text>
+          <Text style={[styles.userEmail, { color: theme.subText }]}>hello@teera.com</Text>
+
+          <TouchableOpacity 
+            style={styles.editButton} 
+            onPress={() => navigation.navigate('EditProfile')}
+          >
+            <Text style={styles.editButtonText}>{t('editProfile')}</Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* --- Settings Menu --- */}
+        <View style={styles.menuContainer}>
+          <Text style={[styles.sectionTitle, { color: theme.subText }]}>{t('preferences')}</Text>
+
+          {/* --- THEME DROPDOWN --- */}
+          <View style={[styles.dropdownWrapper, { backgroundColor: theme.card }]}>
+            <TouchableOpacity 
+              style={styles.menuItem} 
+              onPress={() => setShowThemeDrop(!showThemeDrop)}
+            >
+              <View style={styles.menuLeft}>
+                <View style={[styles.iconWrapper, { backgroundColor: 'rgba(67, 124, 96, 0.1)' }]}>
+                  <Ionicons name="moon-outline" size={20} color="#437C60" />
+                </View>
+                {/* Changed the name to "Mood" as requested */}
+                <Text style={[styles.menuText, { color: theme.text }]}>
+                  Mood: {isDark ? 'Dark' : 'Light'}
+                </Text>
               </View>
-              <Text style={styles.optionText}>Language</Text>
-            </View>
-            <View style={styles.rowRight}>
-              <Text style={styles.selectedLangText}>{selectedLang === 'English' ? 'English' : 'සිංහල'}</Text>
-              <Ionicons name="chevron-down" size={18} color="#ccc" />
+              <Ionicons name={showThemeDrop ? "chevron-up" : "chevron-down"} size={20} color={theme.subText} />
+            </TouchableOpacity>
+
+            {/* Theme Dropdown Options (Kept unchanged) */}
+            {showThemeDrop && (
+              <View style={[styles.dropdownList, { borderTopColor: isDark ? '#333' : '#EEE' }]}>
+                <TouchableOpacity style={styles.dropdownOption} onPress={() => handleThemeSelect(false)}>
+                  <Text style={{ color: theme.text, fontSize: 16 }}>Light Theme</Text>
+                  {!isDark && <Ionicons name="checkmark" size={20} color="#437C60" />}
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.dropdownOption} onPress={() => handleThemeSelect(true)}>
+                  <Text style={{ color: theme.text, fontSize: 16 }}>Dark Theme</Text>
+                  {isDark && <Ionicons name="checkmark" size={20} color="#437C60" />}
+                </TouchableOpacity>
+              </View>
+            )}
+          </View>
+
+          {/* --- LANGUAGE DROPDOWN --- */}
+          <View style={[styles.dropdownWrapper, { backgroundColor: theme.card }]}>
+            <TouchableOpacity 
+              style={styles.menuItem} 
+              onPress={() => setShowLangDrop(!showLangDrop)}
+            >
+              <View style={styles.menuLeft}>
+                <View style={[styles.iconWrapper, { backgroundColor: 'rgba(67, 124, 96, 0.1)' }]}>
+                  <Ionicons name="language-outline" size={20} color="#437C60" />
+                </View>
+                <Text style={[styles.menuText, { color: theme.text }]}>
+                  {t('language')}: {i18n.language === 'en' ? 'English' : 'සිංහල'}
+                </Text>
+              </View>
+              <Ionicons name={showLangDrop ? "chevron-up" : "chevron-down"} size={20} color={theme.subText} />
+            </TouchableOpacity>
+
+            {/* Language Dropdown Options */}
+            {showLangDrop && (
+              <View style={[styles.dropdownList, { borderTopColor: isDark ? '#333' : '#EEE' }]}>
+                <TouchableOpacity style={styles.dropdownOption} onPress={() => handleLanguageSelect('en')}>
+                  <Text style={{ color: theme.text, fontSize: 16 }}>English</Text>
+                  {i18n.language === 'en' && <Ionicons name="checkmark" size={20} color="#437C60" />}
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.dropdownOption} onPress={() => handleLanguageSelect('si')}>
+                  <Text style={{ color: theme.text, fontSize: 16 }}>සිංහල</Text>
+                  {i18n.language === 'si' && <Ionicons name="checkmark" size={20} color="#437C60" />}
+                </TouchableOpacity>
+              </View>
+            )}
+          </View>
+
+          <Text style={[styles.sectionTitle, { color: theme.subText, marginTop: 20 }]}>{t('account')}</Text>
+
+          {/* Logout Button */}
+          <TouchableOpacity 
+            style={[styles.menuItemSingle, { backgroundColor: theme.card, marginTop: 10 }]} 
+            onPress={handleLogout}
+          >
+            <View style={styles.menuLeft}>
+              <View style={[styles.iconWrapper, { backgroundColor: 'rgba(255, 59, 48, 0.1)' }]}>
+                <Ionicons name="log-out-outline" size={20} color="#FF3B30" />
+              </View>
+              <Text style={[styles.menuText, { color: '#FF3B30', fontWeight: 'bold' }]}>{t('logout')}</Text>
             </View>
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.optionRow}>
-            <View style={styles.optionLeft}>
-              <View style={styles.iconCircle}>
-                <Ionicons name="contrast-outline" size={20} color="#407B60" />
-              </View>
-              <Text style={styles.optionText}>Theme</Text>
-            </View>
-            <Ionicons name="chevron-forward" size={20} color="#ccc" />
-          </TouchableOpacity>
-
-          <TouchableOpacity style={[styles.optionRow, { borderBottomWidth: 0 }]}>
-            <View style={styles.optionLeft}>
-              <View style={[styles.iconCircle, { backgroundColor: '#FDECEA' }]}>
-                <MaterialIcons name="logout" size={20} color="#E57373" />
-              </View>
-              <Text style={[styles.optionText, { color: "#E57373" }]}>Log Out</Text>
-            </View>
-            <Ionicons name="chevron-forward" size={20} color="#ccc" />
-          </TouchableOpacity>
         </View>
       </ScrollView>
-
-      {/* Language Selection Modal (The Dropdown) */}
-      <Modal
-        visible={langModalVisible}
-        transparent={true}
-        animationType="fade"
-        onRequestClose={() => setLangModalVisible(false)}
-      >
-        <TouchableWithoutFeedback onPress={() => setLangModalVisible(false)}>
-          <View style={styles.modalOverlay}>
-            <View style={styles.dropdownMenu}>
-              {languages.map((item, index) => (
-                <TouchableOpacity
-                  key={index}
-                  style={[
-                    styles.dropdownItem,
-                    index !== languages.length - 1 && styles.dropdownDivider
-                  ]}
-                  onPress={() => selectLanguage(item.value)}
-                >
-                  <Text style={[
-                    styles.dropdownItemText,
-                    selectedLang === item.value && { color: '#407B60', fontWeight: 'bold' }
-                  ]}>
-                    {item.label}
-                  </Text>
-                  {selectedLang === item.value && (
-                    <Ionicons name="checkmark" size={18} color="#407B60" />
-                  )}
-                </TouchableOpacity>
-              ))}
-            </View>
-          </View>
-        </TouchableWithoutFeedback>
-      </Modal>
-
-      {/* Bottom Navigation */}
-      <View style={styles.bottomNav}>
-        <TouchableOpacity style={styles.navItem}><Ionicons name="home-outline" size={22} color="#888" /><Text style={styles.navText}>Home</Text></TouchableOpacity>
-        <TouchableOpacity style={styles.navItem}><Ionicons name="calendar-outline" size={22} color="#888" /><Text style={styles.navText}>Calendar</Text></TouchableOpacity>
-        <TouchableOpacity style={styles.scanWrapper}><View style={styles.scanButton}><Feather name="maximize" size={24} color="white" /></View></TouchableOpacity>
-        <TouchableOpacity style={styles.navItem}><Ionicons name="notifications-outline" size={22} color="#888" /><Text style={styles.navText}>Alerts</Text></TouchableOpacity>
-        <TouchableOpacity style={styles.navItem}>
-          <View style={styles.activeDot} />
-          <Image source={{ uri: "https://via.placeholder.com/26" }} style={styles.profileNavImage} />
-          <Text style={[styles.navText, { color: "#407B60", fontWeight: '600' }]}>Profile</Text>
-        </TouchableOpacity>
-      </View>
     </SafeAreaView>
   );
 };
 
-export default ProfileScreen;
-
 const styles = StyleSheet.create({
-  container: { 
-    flex: 1, 
-    backgroundColor: "#F9F9F9" 
-  },
+  container: { flex: 1 },
+  scrollContainer: { paddingHorizontal: 20, paddingBottom: 100, paddingTop: 20 },
   header: { 
-    flexDirection: "row", 
-    justifyContent: "space-between", 
-    alignItems: "center", 
-    paddingHorizontal: 20, 
-    paddingVertical: 50 
-  },
-  headerTitle: { 
-    fontSize: 18, 
-    fontWeight: "600", 
-    color: "#222" 
-  },
-  profileCard: { 
-    alignItems: "center", 
-    paddingVertical: 20 
-  },
-  imageWrapper: { 
-    position: "relative", 
-    marginBottom: 15 
-  },
-  profileImage: { 
-    width: 100, 
-    height: 100, 
-    borderRadius: 50, 
-    backgroundColor: "#E1E1E1", 
-    borderWidth: 3, 
-    borderColor: "white" 
-  },
-  cameraIcon: { 
-    position: "absolute", 
-    bottom: 0, right: 0, 
-    backgroundColor: "#407B60", 
-    padding: 8, 
-    borderRadius: 20 },
-  name: { 
-    fontSize: 20, 
-    fontWeight: "700", 
-    color: "#222" },
-  email: { 
-    fontSize: 14, 
-    color: "#888", marginBottom: 15 },
-  editButton: { 
-    backgroundColor: "#407B60", 
-    paddingHorizontal: 25, 
-    paddingVertical: 8, 
-    borderRadius: 20 
-  },
-  editText: { 
-    color: "white", 
-    fontWeight: "600", 
-    fontSize: 14 
-  },
-  optionsSection: { 
-    backgroundColor: "white", 
-    marginHorizontal: 20, 
-    borderRadius: 15, 
-    paddingHorizontal: 15, 
-    marginTop: 10, 
-    elevation: 2 
-  },
-  optionRow: { 
-    flexDirection: "row", 
-    alignItems: "center", 
-    justifyContent: "space-between", 
-    paddingVertical: 15, 
-    borderBottomWidth: 1, 
-    borderBottomColor: "#F0F0F0" 
-  },
-  optionLeft: { 
-    flexDirection: "row", 
-    alignItems: "center" 
-  },
-  iconCircle: { 
-    width: 36, 
-    height: 36, 
-    borderRadius: 18, 
-    backgroundColor: "#E8F5E9", 
-    justifyContent: "center", 
-    alignItems: "center", 
-    marginRight: 15 
-  },
-  optionText: { 
-    fontSize: 16, 
-    fontWeight: "500", 
-    color: "#333" 
-  },
-  rowRight: { 
-    flexDirection: "row", 
-    alignItems: "center" 
-  },
-  selectedLangText: { 
-    marginRight: 8, 
-    color: "#888", 
-    fontSize: 14 
-  },
-  
-  // Dropdown Styles
-  modalOverlay: { 
-    flex: 1, 
-    backgroundColor: 'rgba(0,0,0,0.1)', 
-    justifyContent: 'center', 
-    alignItems: 'center' 
-  },
-  dropdownMenu: { 
-    width: 200, 
-    backgroundColor: 'white', 
-    borderRadius: 12, 
-    padding: 10, 
-    elevation: 5, 
-    shadowColor: "#000", 
-    shadowOpacity: 0.2, 
-    shadowRadius: 10 
-  },
-  dropdownItem: { 
     flexDirection: 'row', 
-    justifyContent: 'space-between', 
     alignItems: 'center', 
-    paddingVertical: 12, 
-    paddingHorizontal: 10 
+    justifyContent: 'space-between', 
+    marginBottom: 20 
   },
-  dropdownDivider: { 
-    borderBottomWidth: 1, 
-    borderBottomColor: '#f0f0f0' 
+  backButton: {
+    padding: 5,
   },
-  dropdownItemText: { 
-    fontSize: 16, 
-    color: '#333' 
+  headerTitle: { fontSize: 24, fontWeight: 'bold' },
+  profileCard: {
+    alignItems: 'center', padding: 25, borderRadius: 25,
+    elevation: 5, shadowColor: '#000', shadowOpacity: 0.05,
+    shadowRadius: 10, marginBottom: 30,
   },
-  bottomNav: { 
-    position: "absolute", 
-    bottom: 0, 
-    width: "100%", 
-    height: 80, 
-    backgroundColor: "white", 
-    flexDirection: "row", 
-    justifyContent: "space-around", 
-    alignItems: "center", 
-    borderTopWidth: 1, 
-    borderTopColor: "#EEE", 
-    paddingBottom: 15 
+  avatarContainer: {
+    width: 80, height: 80, borderRadius: 40,
+    backgroundColor: '#437C60', justifyContent: 'center',
+    alignItems: 'center', marginBottom: 15,
   },
-  navItem: { 
-    alignItems: "center", 
-    justifyContent: "center" 
+  userName: { fontSize: 22, fontWeight: 'bold', marginBottom: 5 },
+  userEmail: { fontSize: 14, marginBottom: 20 },
+  editButton: {
+    backgroundColor: '#437C60', paddingVertical: 10, paddingHorizontal: 25,
+    borderRadius: 20,
   },
-  navText: { 
-    fontSize: 10, 
-    marginTop: 4, 
-    color: "#888" 
+  editButtonText: { color: '#FFF', fontWeight: 'bold', fontSize: 14 },
+  menuContainer: { width: '100%' },
+  sectionTitle: { fontSize: 14, fontWeight: '600', textTransform: 'uppercase', marginBottom: 10, marginLeft: 10 },
+  
+  // Dropdown Wrappers
+  dropdownWrapper: {
+    borderRadius: 20,
+    marginBottom: 12,
+    elevation: 2, shadowColor: '#000', shadowOpacity: 0.03, shadowRadius: 5,
+    overflow: 'hidden', 
   },
-  scanWrapper: { 
-    marginTop: -35 
+  menuItem: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    padding: 15,
   },
-  scanButton: { 
-    width: 55, 
-    height: 55, 
-    borderRadius: 18, 
-    backgroundColor: "#407B60", 
-    justifyContent: "center", 
-    alignItems: "center", 
-    elevation: 5 
+  menuItemSingle: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    padding: 15, borderRadius: 20, marginBottom: 12,
+    elevation: 2, shadowColor: '#000', shadowOpacity: 0.03, shadowRadius: 5,
   },
-  profileNavImage: { 
-    width: 24, 
-    height: 24, 
-    borderRadius: 12, 
-    borderWidth: 1, 
-    borderColor: "#407B60" 
+  dropdownList: {
+    borderTopWidth: 1,
+    paddingHorizontal: 15,
+    paddingBottom: 10,
   },
-  activeDot: { 
-    width: 4, 
-    height: 4, 
-    borderRadius: 2, 
-    backgroundColor: "#407B60", 
-    position: "absolute", 
-    top: -8 
-  }
+  dropdownOption: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 10,
+  },
+  menuLeft: { flexDirection: 'row', alignItems: 'center' },
+  iconWrapper: {
+    width: 40, height: 40, borderRadius: 12,
+    justifyContent: 'center', alignItems: 'center', marginRight: 15,
+  },
+  menuText: { fontSize: 16, fontWeight: '500' },
 });
+
+export default ProfileScreen;
