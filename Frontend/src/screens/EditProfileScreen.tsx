@@ -14,21 +14,17 @@ import {
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { useNavigation } from '@react-navigation/native';
 import { launchImageLibrary } from 'react-native-image-picker';
-import { useTheme } from '../ThemeContext'; 
+import { useTheme } from '../ThemeContext';
 
 const EditProfileScreen = () => {
   const navigation = useNavigation<any>();
   const { theme, isDark } = useTheme();
 
-  // Profile States
   const [name, setName] = useState('Wasantha Ranasinghe');
   const [email, setEmail] = useState('wasantha@gmail.com');
   const [phone, setPhone] = useState('+94 77 123 4567');
-  const [location, setLocation] = useState('Colombo, Sri Lanka');
   const [profilePic, setProfilePic] = useState("https://via.placeholder.com/120");
 
-  // Refs for focusing inputs
-  const nameRef = useRef<TextInput>(null);
   const emailRef = useRef<TextInput>(null);
   const phoneRef = useRef<TextInput>(null);
 
@@ -47,7 +43,8 @@ const EditProfileScreen = () => {
     const options: any = { mediaType: 'photo', quality: 1 };
     const result = await launchImageLibrary(options);
 
-    if (result.assets && result.assets.length > 0) {
+    // Added check for "didCancel" or empty assets
+    if (!result.didCancel && result.assets && result.assets.length > 0) {
       const uri = result.assets[0].uri;
       if (uri) setProfilePic(uri);
     }
@@ -73,18 +70,17 @@ const EditProfileScreen = () => {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
-      {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
           <Ionicons name="arrow-back" size={28} color={theme.text} />
         </TouchableOpacity>
         <Text style={[styles.headerTitle, { color: theme.text }]}>Edit Profile</Text>
-        <div style={{ width: 28 }} /> 
+        {/* FIXED: Changed <div> to <View> */}
+        <View style={{ width: 28 }} /> 
       </View>
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
         
-        {/* Profile Picture */}
         <View style={styles.imageContainer}>
           <View style={styles.imageWrapper}>
             <Image 
@@ -98,19 +94,19 @@ const EditProfileScreen = () => {
           <Text style={[styles.userNameTitle, { color: theme.text }]}>Hello, {name.split(' ')[0]}!</Text>
         </View>
 
-        {/* Form */}
         <View style={[styles.formContainer, { backgroundColor: theme.card }]}>
           
           <Text style={[styles.inputLabel, { color: theme.subText }]}>Full Name</Text>
           <View style={[styles.inputWrapper, { backgroundColor: theme.background, borderColor: isDark ? '#444' : '#E0E0E0' }]}>
             <Ionicons name="person-outline" size={20} color="#2E7D32" style={styles.inputIcon} />
             <TextInput
-              ref={nameRef}
               style={[styles.input, { color: theme.text }]}
               value={name}
               onChangeText={setName}
               placeholder="e.g. John Doe"
               placeholderTextColor={theme.subText}
+              returnKeyType="next"
+              onSubmitEditing={() => emailRef.current?.focus()}
             />
           </View>
 
@@ -123,8 +119,12 @@ const EditProfileScreen = () => {
               value={email}
               onChangeText={setEmail}
               keyboardType="email-address"
+              autoCapitalize="none"
+              autoCorrect={false}
               placeholder="example@mail.com"
               placeholderTextColor={theme.subText}
+              returnKeyType="next"
+              onSubmitEditing={() => phoneRef.current?.focus()}
             />
           </View>
 
@@ -139,6 +139,8 @@ const EditProfileScreen = () => {
               keyboardType="phone-pad"
               placeholder="+94 77 123 4567"
               placeholderTextColor={theme.subText}
+              returnKeyType="done"
+              onSubmitEditing={handleSave}
             />
           </View>
         </View>
@@ -151,66 +153,3 @@ const EditProfileScreen = () => {
     </SafeAreaView>
   );
 };
-
-const styles = StyleSheet.create({
-  container: { flex: 1 },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    paddingVertical: 20,
-  },
-  backButton: { padding: 5 },
-  headerTitle: { fontSize: 20, fontWeight: 'bold' },
-  scrollContent: { paddingHorizontal: 20, paddingBottom: 40 },
-  imageContainer: { alignItems: 'center', marginTop: 10, marginBottom: 30 },
-  imageWrapper: { position: 'relative' },
-  profileImage: { width: 120, height: 120, borderRadius: 60, borderWidth: 4 },
-  userNameTitle: { marginTop: 15, fontSize: 22, fontWeight: 'bold' },
-  cameraButton: {
-    position: 'absolute',
-    bottom: 0,
-    right: 5,
-    backgroundColor: '#2E7D32',
-    width: 38,
-    height: 38,
-    borderRadius: 19,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 3,
-    borderColor: '#FFF',
-    elevation: 5,
-  },
-  formContainer: {
-    borderRadius: 20,
-    padding: 20,
-    elevation: 3,
-    shadowColor: '#000',
-    shadowOpacity: 0.1,
-    shadowRadius: 10,
-  },
-  inputLabel: { fontSize: 14, fontWeight: '600', marginBottom: 8, marginTop: 15 },
-  inputWrapper: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderRadius: 12,
-    borderWidth: 1,
-    paddingHorizontal: 15,
-    height: 55,
-  },
-  inputIcon: { marginRight: 10 },
-  input: { flex: 1, fontSize: 16 },
-  saveButton: {
-    backgroundColor: '#2E7D32',
-    borderRadius: 15,
-    height: 55,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginTop: 35,
-    elevation: 3,
-  },
-  saveButtonText: { fontSize: 18, fontWeight: 'bold', color: '#FFF' },
-});
-
-export default EditProfileScreen;
