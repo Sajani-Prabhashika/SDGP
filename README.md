@@ -38,6 +38,6 @@ It also includes a geospatial alert system to notify nearby farmers about diseas
 - Treading (backend tasks)
   
 #### Notification /  Alerts
-- Twilio (SMS / communication services)
+- Firebase (SMS / communication services)
 
 ## Installation
