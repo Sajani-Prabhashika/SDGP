@@ -1,74 +1,80 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   TextInput,
   TouchableOpacity,
-  SafeAreaView,
   ScrollView,
   Image,
-  Alert, // For the Yes/No popup
+  SafeAreaView,
+  Keyboard,
+  Alert,
 } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { useNavigation } from '@react-navigation/native';
-import { launchImageLibrary } from 'react-native-image-picker'; // For Gallery
+import { launchImageLibrary } from 'react-native-image-picker';
 import { useTheme } from '../ThemeContext'; 
 
 const EditProfileScreen = () => {
   const navigation = useNavigation<any>();
-  const { theme, isDark } = useTheme(); // Global theme state
+  const { theme, isDark } = useTheme();
 
   // Profile States
   const [name, setName] = useState('Wasantha Ranasinghe');
   const [email, setEmail] = useState('wasantha@gmail.com');
   const [phone, setPhone] = useState('+94 77 123 4567');
+  const [location, setLocation] = useState('Colombo, Sri Lanka');
   const [profilePic, setProfilePic] = useState("https://via.placeholder.com/120");
 
-  // --- Logic to change photo ---
+  // Refs for focusing inputs
+  const nameRef = useRef<TextInput>(null);
+  const emailRef = useRef<TextInput>(null);
+  const phoneRef = useRef<TextInput>(null);
+
   const handlePhotoPress = () => {
     Alert.alert(
       "Change Profile Picture",
       "Do you want to open the gallery to change your photo?",
       [
-        {
-          text: "No",
-          onPress: () => console.log("User cancelled"),
-          style: "cancel"
-        },
-        { 
-          text: "Yes", 
-          onPress: () => openGallery() 
-        }
+        { text: "No", style: "cancel" },
+        { text: "Yes", onPress: () => openGallery() }
       ]
     );
   };
 
   const openGallery = async () => {
-    const options: any = {
-      mediaType: 'photo',
-      quality: 1,
-    };
-
+    const options: any = { mediaType: 'photo', quality: 1 };
     const result = await launchImageLibrary(options);
 
     if (result.assets && result.assets.length > 0) {
       const uri = result.assets[0].uri;
-      if (uri) {
-        setProfilePic(uri); // Updates the UI with selected photo
-      }
+      if (uri) setProfilePic(uri);
     }
   };
 
   const handleSave = () => {
-    Alert.alert("Success", "Profile updated successfully!");
-    navigation.goBack();
+    // Validation
+    if (!name.trim()) {
+      Alert.alert("Error", "Full Name cannot be empty.");
+      return;
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email.trim())) {
+      Alert.alert("Error", "Please enter a valid email address.");
+      return;
+    }
+
+    Keyboard.dismiss();
+    Alert.alert("Success", "Profile updated successfully!", [
+      { text: "OK", onPress: () => navigation.goBack() }
+    ]);
   };
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
-      
-      {/* --- Header --- */}
+      {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
           <Ionicons name="arrow-back" size={28} color={theme.text} />
@@ -79,76 +85,59 @@ const EditProfileScreen = () => {
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
         
-        {/* --- Profile Picture Section --- */}
+        {/* Profile Picture */}
         <View style={styles.imageContainer}>
           <View style={styles.imageWrapper}>
             <Image 
               source={{ uri: profilePic }} 
               style={[styles.profileImage, { borderColor: theme.card }]} 
             />
-            {/* Camera Button triggers the Alert */}
-            <TouchableOpacity 
-              style={styles.cameraButton} 
-              onPress={handlePhotoPress}
-            >
+            <TouchableOpacity style={styles.cameraButton} onPress={handlePhotoPress}>
               <Ionicons name="camera" size={20} color="#FFF" />
             </TouchableOpacity>
           </View>
           <Text style={[styles.userNameTitle, { color: theme.text }]}>Hello, {name.split(' ')[0]}!</Text>
         </View>
 
-        {/* --- Form Section --- */}
+        {/* Form */}
         <View style={[styles.formContainer, { backgroundColor: theme.card }]}>
           
-          {/* Name Input */}
           <Text style={[styles.inputLabel, { color: theme.subText }]}>Full Name</Text>
-          <View style={[styles.inputWrapper, { 
-            backgroundColor: theme.background, 
-            borderColor: isDark ? '#444' : '#E0E0E0' 
-          }]}>
+          <View style={[styles.inputWrapper, { backgroundColor: theme.background, borderColor: isDark ? '#444' : '#E0E0E0' }]}>
             <Ionicons name="person-outline" size={20} color="#2E7D32" style={styles.inputIcon} />
             <TextInput
+              ref={nameRef}
               style={[styles.input, { color: theme.text }]}
               value={name}
               onChangeText={setName}
-              placeholderTextColor={theme.subText}
             />
           </View>
 
-          {/* Email Input */}
           <Text style={[styles.inputLabel, { color: theme.subText }]}>Email Address</Text>
-          <View style={[styles.inputWrapper, { 
-            backgroundColor: theme.background, 
-            borderColor: isDark ? '#444' : '#E0E0E0' 
-          }]}>
+          <View style={[styles.inputWrapper, { backgroundColor: theme.background, borderColor: isDark ? '#444' : '#E0E0E0' }]}>
             <Ionicons name="mail-outline" size={20} color="#2E7D32" style={styles.inputIcon} />
             <TextInput
+              ref={emailRef}
               style={[styles.input, { color: theme.text }]}
               value={email}
               onChangeText={setEmail}
               keyboardType="email-address"
-              placeholderTextColor={theme.subText}
             />
           </View>
 
-          {/* Phone Input */}
           <Text style={[styles.inputLabel, { color: theme.subText }]}>Phone Number</Text>
-          <View style={[styles.inputWrapper, { 
-            backgroundColor: theme.background, 
-            borderColor: isDark ? '#444' : '#E0E0E0' 
-          }]}>
+          <View style={[styles.inputWrapper, { backgroundColor: theme.background, borderColor: isDark ? '#444' : '#E0E0E0' }]}>
             <Ionicons name="call-outline" size={20} color="#2E7D32" style={styles.inputIcon} />
             <TextInput
+              ref={phoneRef}
               style={[styles.input, { color: theme.text }]}
               value={phone}
               onChangeText={setPhone}
               keyboardType="phone-pad"
-              placeholderTextColor={theme.subText}
             />
           </View>
         </View>
 
-        {/* --- Save Button --- */}
         <TouchableOpacity style={styles.saveButton} onPress={handleSave}>
           <Text style={styles.saveButtonText}>Save Changes</Text>
         </TouchableOpacity>
@@ -157,8 +146,6 @@ const EditProfileScreen = () => {
     </SafeAreaView>
   );
 };
-
-export default EditProfileScreen;
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
@@ -208,15 +195,4 @@ const styles = StyleSheet.create({
     height: 55,
   },
   inputIcon: { marginRight: 10 },
-  input: { flex: 1, fontSize: 16 },
-  saveButton: {
-    backgroundColor: '#2E7D32',
-    borderRadius: 15,
-    height: 55,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginTop: 35,
-    elevation: 3,
-  },
-  saveButtonText: { fontSize: 18, fontWeight: 'bold', color: '#FFF' },
-});
+  input: { flex: 1,
