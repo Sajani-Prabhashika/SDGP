@@ -51,3 +51,48 @@ else:
     print(f"WARNING: Model weights file {WEIGHTS_PATH} not found!")
     disease_model = None
 
+# --- BACKGROUND REMINDER TASK ---
+def check_and_send_reminders():
+    # This thread wakes up every hour to see if any reminders are scheduled for today
+    while True:
+        try:
+            today_str = datetime.now(timezone.utc).strftime('%Y-%m-%d')
+            users_stream = db.collection('users').stream()
+            
+            for user_doc in users_stream:
+                user_data = user_doc.to_dict()
+                user_ref = user_doc.reference
+                
+                # Fetch only un-notified reminders for this user
+                reminders_query = user_ref.collection('reminders').where('notified', '==', False).stream()
+                
+                for doc in reminders_query:
+                    rem_data = doc.to_dict()
+                    
+                    if rem_data.get('date') == today_str:
+                        fcm_token = user_data.get('fcm_token')
+                        
+                        if fcm_token:
+                            try:
+                                message = messaging.Message(
+                                    notification=messaging.Notification(
+                                        title=f"Reminder: {rem_data.get('name')}",
+                                        body=rem_data.get('description', 'You have a scheduled task for today.')
+                                    ),
+                                    token=fcm_token,
+                                )
+                                messaging.send(message)
+                            except Exception as e:
+                                print(f"Firebase Messaging Error for {user_doc.id}: {e}")
+                                
+                        # Mark as notified whether they have a token or not, so we don't retry forever
+                        doc.reference.update({"notified": True})
+                        
+        except Exception as e:
+            print(f"Reminder background task error: {e}")
+            
+        # Run checks every 1 hour (3600 seconds)
+        time.sleep(3600)
+
+reminder_thread = threading.Thread(target=check_and_send_reminders, daemon=True)
+reminder_thread.start()
