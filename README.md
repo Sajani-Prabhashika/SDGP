@@ -111,3 +111,24 @@ pip install -r requirements.txt
 
 ---
 
+## 🏃 Running the Server
+
+### Manual Startup
+
+You can start the Flask server directly from the `backend_teera` directory:
+
+```powershell
+python app.py
+```
+The server will run on `http://localhost:5000` by default.
+
+### Automated Startup (Recommended)
+
+From the project root (`TEERA/`), you can use the `start_servers.py` script to start both the backend and frontend simultaneously. This script also automatically updates the frontend configuration with your local IP address.
+
+```powershell
+python start_servers.py
+```
+
+---
+
