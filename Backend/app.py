@@ -183,4 +183,5 @@ def manage_posts():
                 "created_at": firestore.SERVER_TIMESTAMP,
                 "isVerified": False
             }
-            
+            # Save to database (accepts the Sentinel)
+            post_ref.set(post_data)
