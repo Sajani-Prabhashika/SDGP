@@ -78,3 +78,13 @@ This is the Flask-based backend for the Teera application, providing APIs for us
 
 ---
 
+## 🛠️ Setup & Installation
+
+### 1. Prerequisites
+
+- **Python 3.8+** installed on your system.
+- **Firebase Project**:
+  - `firebase_config.json`: Download your service account key from Firebase Console and place it in this directory.
+  - **Web API Key**: Ensure the `FIREBASE_WEB_API_KEY` in `app.py` matches your project's Web API Key.
+- **ML Model**: Ensure the model weights are located at `cinnamon_disease_model.keras/model.weights.h5`.
+
