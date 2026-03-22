@@ -160,3 +160,140 @@ def manage_posts():
                     filename = f"{uuid.uuid4().hex}_{file.filename}"
                     file.save(os.path.join(UPLOAD_FOLDER, filename))
                     image_url = f"{request.host_url}uploads/{filename}"
+            # 2. Fetch User Details for Post
+            user_doc = db.collection('users').document(uid).get()
+            user_data = user_doc.to_dict() if user_doc.exists else {}
+            
+            user_name = user_data.get('full_name', 'Unknown User')
+            user_handle = f"@{user_name.replace(' ', '').lower()}"
+            user_img = user_data.get('profile_photo', 'https://i.pravatar.cc/150')
+
+            # 3. Create Post Document
+            post_ref = db.collection('posts').document()
+            post_data = {
+                "id": post_ref.id,
+                "user_uid": uid,
+                "userName": user_name,
+                "userHandle": user_handle,
+                "userImg": user_img,
+                "postText": post_text,
+                "postImg": image_url,
+                "likes": 0,
+                "comments": 0,
+                "created_at": firestore.SERVER_TIMESTAMP,
+                "isVerified": False
+            }
+            # Save to database (accepts the Sentinel)
+            post_ref.set(post_data)
+
+            # Make response serializable by temporarily removing or converting the Sentinel
+            response_data = post_data.copy()
+            response_data['created_at'] = datetime.now(timezone.utc).isoformat()
+            
+            return jsonify({"message": "Post created successfully", "post": response_data}), 201
+
+        except Exception as e:
+            return jsonify({"error": str(e)}), 500
+
+    elif request.method == 'GET':
+        try:
+            # Fetch the most recent 50 posts
+            posts_query = db.collection('posts').order_by('created_at', direction=firestore.Query.DESCENDING).limit(50)
+            posts = []
+            for doc in posts_query.stream():
+                data = doc.to_dict()
+                
+                # Format timestamps for JSON response
+                if 'created_at' in data and data['created_at']:
+                    # Firestore SERVER_TIMESTAMP is sometimes not evaluated to an object right away, wait,
+                    # when we read it back it's a DatetimeWithNanoseconds
+                    try:
+                        data['created_at'] = data['created_at'].isoformat()
+                    except AttributeError:
+                        data['created_at'] = str(data['created_at'])
+                else:
+                    data['created_at'] = ""
+
+                # Compute time ago roughly
+                # For simplicity, we can pass the timestamp correctly to frontend and let fontend handle it 
+                # or just hardcode passing ISO string, currently formatting it as ISO string.
+                # However, the frontend currently expects `time: '2h'` etc. Let's just create a quick formatter.
+                data['time'] = "Recently"
+                if data.get('created_at'):
+                    try:
+                        dt = datetime.fromisoformat(data['created_at'])
+                        now = datetime.now(timezone.utc)
+                        diff = now - dt
+                        if diff.days > 0:
+                            data['time'] = f"{diff.days}d"
+                        elif diff.seconds >= 3600:
+                            data['time'] = f"{diff.seconds // 3600}h"
+                        elif diff.seconds >= 60:
+                            data['time'] = f"{diff.seconds // 60}m"
+                        else:
+                            data['time'] = "Just now"
+                    except:
+                        pass
+                
+                posts.append(data)
+                
+            return jsonify(posts), 200
+
+        except Exception as e:
+            return jsonify({"error": str(e)}), 500
+                
+@app.route('/api/profile/<uid>', methods=['GET', 'POST'])
+def handle_profile(uid):
+    user_ref = db.collection('users').document(uid)
+    if request.method == 'GET':
+        doc = user_ref.get()
+        return jsonify(doc.to_dict()) if doc.exists else (jsonify({"error": "User not found"}), 404)
+
+    if request.method == 'POST':
+        data = request.json
+        update_fields = {}
+        
+        # 1. Update Name
+        if 'full_name' in data:
+            update_fields['full_name'] = data['full_name']
+            
+        # 2. Update Phone Number
+        if 'phone_number' in data:
+            update_fields['phone_number'] = data['phone_number']
+            
+        # 3. Update Profile Photo (stores as URL or Base64 string)
+        if 'profile_photo' in data:
+            update_fields['profile_photo'] = data['profile_photo']
+        
+        # 4. Profile Preferences
+        if 'mood' in data:
+            update_fields['preferences.mood'] = data['mood']
+        if 'language' in data:
+            update_fields['preferences.language'] = data['language']
+            
+        # 5. Location Name (e.g. "Kandy", "Colombo")
+        if 'location_name' in data:
+            update_fields['location_name'] = data['location_name']
+            
+        # 6. FCM Token for Push Notifications
+        if 'fcm_token' in data:
+            update_fields['fcm_token'] = data['fcm_token']
+            
+        # 6. Update Email Address (Requires Auth Update)
+        if 'email' in data:
+            new_email = data['email']
+            try:
+                # Update Firebase Authentication email
+                auth.update_user(uid, email=new_email)
+                update_fields['email'] = new_email
+            except Exception as e:
+                return jsonify({"error": f"Failed to update Auth email: {str(e)}"}), 400
+
+        if not update_fields:
+            return jsonify({"error": "No fields to update"}), 400
+            
+        try:
+            user_ref.update(update_fields)
+            return jsonify({"message": "Profile updated successfully"}), 200
+        except Exception as e:
+            return jsonify({"error": str(e)}), 500
