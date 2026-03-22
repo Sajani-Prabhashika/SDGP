@@ -101,3 +101,13 @@ python -m venv venv
 .\venv\Scripts\activate
 ```
 
+### 3. Install Dependencies
+
+Install the required Python packages using the provided `requirements.txt`:
+
+```powershell
+pip install -r requirements.txt
+```
+
+---
+
