@@ -242,4 +242,58 @@ def manage_posts():
         except Exception as e:
             return jsonify({"error": str(e)}), 500
                 
+@app.route('/api/profile/<uid>', methods=['GET', 'POST'])
+def handle_profile(uid):
+    user_ref = db.collection('users').document(uid)
+    if request.method == 'GET':
+        doc = user_ref.get()
+        return jsonify(doc.to_dict()) if doc.exists else (jsonify({"error": "User not found"}), 404)
 
+    if request.method == 'POST':
+        data = request.json
+        update_fields = {}
+        
+        # 1. Update Name
+        if 'full_name' in data:
+            update_fields['full_name'] = data['full_name']
+            
+        # 2. Update Phone Number
+        if 'phone_number' in data:
+            update_fields['phone_number'] = data['phone_number']
+            
+        # 3. Update Profile Photo (stores as URL or Base64 string)
+        if 'profile_photo' in data:
+            update_fields['profile_photo'] = data['profile_photo']
+        
+        # 4. Profile Preferences
+        if 'mood' in data:
+            update_fields['preferences.mood'] = data['mood']
+        if 'language' in data:
+            update_fields['preferences.language'] = data['language']
+            
+        # 5. Location Name (e.g. "Kandy", "Colombo")
+        if 'location_name' in data:
+            update_fields['location_name'] = data['location_name']
+            
+        # 6. FCM Token for Push Notifications
+        if 'fcm_token' in data:
+            update_fields['fcm_token'] = data['fcm_token']
+            
+        # 6. Update Email Address (Requires Auth Update)
+        if 'email' in data:
+            new_email = data['email']
+            try:
+                # Update Firebase Authentication email
+                auth.update_user(uid, email=new_email)
+                update_fields['email'] = new_email
+            except Exception as e:
+                return jsonify({"error": f"Failed to update Auth email: {str(e)}"}), 400
+
+        if not update_fields:
+            return jsonify({"error": "No fields to update"}), 400
+            
+        try:
+            user_ref.update(update_fields)
+            return jsonify({"message": "Profile updated successfully"}), 200
+        except Exception as e:
+            return jsonify({"error": str(e)}), 500
