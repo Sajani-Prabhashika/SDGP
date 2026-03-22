@@ -96,3 +96,48 @@ def check_and_send_reminders():
 
 reminder_thread = threading.Thread(target=check_and_send_reminders, daemon=True)
 reminder_thread.start()
+
+# --- ROUTES ---
+
+@app.route('/api/signup', methods=['POST'])
+def signup():
+    data = request.json
+    email = data.get('email')
+    phone = data.get('phone_number')
+    full_name = data.get('full_name')
+    password = data.get('password')
+
+    # 1. Check if phone exists
+    existing_user = db.collection('users').where('phone_number', '==', phone).limit(1).get()
+    if len(existing_user) > 0:
+        return jsonify({"message": f"You have already signed up with {phone}."}), 400
+
+    # 2. Sign up to Firebase Auth via REST API to get idToken
+    signup_url = f"https://identitytoolkit.googleapis.com/v1/accounts:signUp?key={FIREBASE_WEB_API_KEY}"
+    req = requests.post(signup_url, json={"email": email, "password": password, "returnSecureToken": True})
+    
+    if req.status_code != 200:
+        error_msg = req.json().get('error', {}).get('message', 'Signup failed')
+        return jsonify({"error": error_msg}), 400
+        
+    resp_data = req.json()
+    uid = resp_data['localId']
+    id_token = resp_data['idToken']
+    
+    # 3. Trigger Firebase Email Verification
+    verify_url = f"https://identitytoolkit.googleapis.com/v1/accounts:sendOobCode?key={FIREBASE_WEB_API_KEY}"
+    verify_req = requests.post(verify_url, json={"requestType": "VERIFY_EMAIL", "idToken": id_token})
+    if verify_req.status_code != 200:
+        return jsonify({"error": "Failed to send verification email"}), 500
+
+    # 4. Create permanent user document in Firestore immediately
+    db.collection('users').document(uid).set({
+        "full_name": full_name,
+        "email": email,
+        "phone_number": phone,
+        "preferences": {"mood": "Light", "language": "English"},
+        "joined_at": firestore.SERVER_TIMESTAMP
+    })
+    
+    return jsonify({"message": "Verification email sent. Please check your inbox before signing in."}), 200
+
