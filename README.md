@@ -62,3 +62,19 @@ Make sure you have installed:
 
 ```bash
 npm install -g expo-cli
+```
+
+# Teera Backend
+
+This is the Flask-based backend for the Teera application, providing APIs for user authentication, community posts, plant disease analysis, and notifications.
+
+## 🚀 Features
+
+- **User Authentication**: Secure signup and signin using Firebase Auth.
+- **Disease Analysis**: ML-powered plant disease detection using TensorFlow/MobileNetV2.
+- **Community Feed**: Post management with image uploads and Firestore integration.
+- **Real-time Notifications**: Disease alerts and task reminders via Firebase Cloud Messaging (FCM).
+- **Chatbot**: Intelligent plant care assistance.
+
+---
+
