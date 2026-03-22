@@ -185,3 +185,59 @@ def manage_posts():
             }
             # Save to database (accepts the Sentinel)
             post_ref.set(post_data)
+
+            # Make response serializable by temporarily removing or converting the Sentinel
+            response_data = post_data.copy()
+            response_data['created_at'] = datetime.now(timezone.utc).isoformat()
+            
+            return jsonify({"message": "Post created successfully", "post": response_data}), 201
+
+        except Exception as e:
+            return jsonify({"error": str(e)}), 500
+
+    elif request.method == 'GET':
+        try:
+            # Fetch the most recent 50 posts
+            posts_query = db.collection('posts').order_by('created_at', direction=firestore.Query.DESCENDING).limit(50)
+            posts = []
+            for doc in posts_query.stream():
+                data = doc.to_dict()
+                
+                # Format timestamps for JSON response
+                if 'created_at' in data and data['created_at']:
+                    # Firestore SERVER_TIMESTAMP is sometimes not evaluated to an object right away, wait,
+                    # when we read it back it's a DatetimeWithNanoseconds
+                    try:
+                        data['created_at'] = data['created_at'].isoformat()
+                    except AttributeError:
+                        data['created_at'] = str(data['created_at'])
+                else:
+                    data['created_at'] = ""
+
+                # Compute time ago roughly
+                # For simplicity, we can pass the timestamp correctly to frontend and let fontend handle it 
+                # or just hardcode passing ISO string, currently formatting it as ISO string.
+                # However, the frontend currently expects `time: '2h'` etc. Let's just create a quick formatter.
+                data['time'] = "Recently"
+                if data.get('created_at'):
+                    try:
+                        dt = datetime.fromisoformat(data['created_at'])
+                        now = datetime.now(timezone.utc)
+                        diff = now - dt
+                        if diff.days > 0:
+                            data['time'] = f"{diff.days}d"
+                        elif diff.seconds >= 3600:
+                            data['time'] = f"{diff.seconds // 3600}h"
+                        elif diff.seconds >= 60:
+                            data['time'] = f"{diff.seconds // 60}m"
+                        else:
+                            data['time'] = "Just now"
+                    except:
+                        pass
+                
+                posts.append(data)
+                
+            return jsonify(posts), 200
+
+        except Exception as e:
+            return jsonify({"error": str(e)}), 500
