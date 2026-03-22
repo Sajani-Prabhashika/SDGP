@@ -160,3 +160,27 @@ def manage_posts():
                     filename = f"{uuid.uuid4().hex}_{file.filename}"
                     file.save(os.path.join(UPLOAD_FOLDER, filename))
                     image_url = f"{request.host_url}uploads/{filename}"
+            # 2. Fetch User Details for Post
+            user_doc = db.collection('users').document(uid).get()
+            user_data = user_doc.to_dict() if user_doc.exists else {}
+            
+            user_name = user_data.get('full_name', 'Unknown User')
+            user_handle = f"@{user_name.replace(' ', '').lower()}"
+            user_img = user_data.get('profile_photo', 'https://i.pravatar.cc/150')
+
+            # 3. Create Post Document
+            post_ref = db.collection('posts').document()
+            post_data = {
+                "id": post_ref.id,
+                "user_uid": uid,
+                "userName": user_name,
+                "userHandle": user_handle,
+                "userImg": user_img,
+                "postText": post_text,
+                "postImg": image_url,
+                "likes": 0,
+                "comments": 0,
+                "created_at": firestore.SERVER_TIMESTAMP,
+                "isVerified": False
+            }
+            
