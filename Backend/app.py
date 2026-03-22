@@ -242,25 +242,4 @@ def manage_posts():
         except Exception as e:
             return jsonify({"error": str(e)}), 500
                 
-@app.route('/api/profile/<uid>', methods=['GET', 'POST'])
-def handle_profile(uid):
-    user_ref = db.collection('users').document(uid)
-    if request.method == 'GET':
-        doc = user_ref.get()
-        return jsonify(doc.to_dict()) if doc.exists else (jsonify({"error": "User not found"}), 404)
 
-    if request.method == 'POST':
-        data = request.json
-        update_fields = {}
-        
-        # 1. Update Name
-        if 'full_name' in data:
-            update_fields['full_name'] = data['full_name']
-            
-        # 2. Update Phone Number
-        if 'phone_number' in data:
-            update_fields['phone_number'] = data['phone_number']
-            
-        # 3. Update Profile Photo (stores as URL or Base64 string)
-        if 'profile_photo' in data:
-            update_fields['profile_photo'] = data['profile_photo']
