@@ -88,3 +88,15 @@ This is the Flask-based backend for the Teera application, providing APIs for us
   - **Web API Key**: Ensure the `FIREBASE_WEB_API_KEY` in `app.py` matches your project's Web API Key.
 - **ML Model**: Ensure the model weights are located at `cinnamon_disease_model.keras/model.weights.h5`.
 
+### 2. Virtual Environment Setup
+
+It is highly recommended to use a virtual environment to manage dependencies.
+
+```powershell
+# Create a virtual environment
+python -m venv venv
+
+# Activate the virtual environment (Windows)
+.\venv\Scripts\activate
+```
+
