@@ -132,3 +132,14 @@ python start_servers.py
 
 ---
 
+## 📁 Directory Structure
+
+- `app.py`: Main Flask application and API endpoints.
+- `requirements.txt`: List of Python dependencies.
+- `firebase_config.json`: Firebase service account credentials.
+- `cinnamon_disease_model.keras/`: Directory containing the ML model weights.
+- `uploads/`: Directory where user-uploaded post images are stored.
+- `venv/`: Python virtual environment.
+
+---
+
