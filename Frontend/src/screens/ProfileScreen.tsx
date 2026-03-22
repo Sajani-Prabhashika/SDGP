@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   StyleSheet, 
   Text, 
@@ -11,6 +11,7 @@ import {
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { useNavigation, CommonActions } from '@react-navigation/native';
 import { useTheme } from '../ThemeContext';
+import { BASE_URL } from '../config';
 
 // Translations & Storage
 import { useTranslation } from 'react-i18next';
@@ -27,6 +28,29 @@ const ProfileScreen: React.FC = () => {
 
   // Hardcode the background so it actually goes fully dark!
   const screenBgColor = isDark ? '#121212' : '#F0F9F1';
+
+  const [userData, setUserData] = useState<any>(null);
+
+  useEffect(() => {
+    const unsubscribe = navigation.addListener('focus', () => {
+      fetchProfile();
+    });
+    fetchProfile();
+    return unsubscribe;
+  }, [navigation]);
+
+  const fetchProfile = async () => {
+    try {
+      const storedUid = await AsyncStorage.getItem('user_uid') || 'test_uid_123';
+      const res = await fetch(`${BASE_URL}/api/profile/${storedUid}`);
+      const data = await res.json();
+      if (res.ok) {
+        setUserData(data);
+      }
+    } catch (error) {
+      console.error(error);
+    }
+  };
 
   const handleLogout = () => {
     navigation.dispatch(
@@ -48,14 +72,34 @@ const ProfileScreen: React.FC = () => {
       }
     }
     setShowLangDrop(false); // Close dropdown
+    
+    // Push the preference update to the backend
+    try {
+      const storedUid = await AsyncStorage.getItem('user_uid') || 'test_uid_123';
+      await fetch(`${BASE_URL}/api/profile/${storedUid}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ language: lang === 'en' ? "English" : "Sinhala" })
+      });
+    } catch(e) {}
   };
 
   // Dropdown Action: Change Theme
-  const handleThemeSelect = (selectDark: boolean) => {
+  const handleThemeSelect = async (selectDark: boolean) => {
     if (isDark !== selectDark) {
       toggleTheme();
     }
     setShowThemeDrop(false); // Close dropdown
+    
+    // Push the preference update to the backend
+    try {
+      const storedUid = await AsyncStorage.getItem('user_uid') || 'test_uid_123';
+      await fetch(`${BASE_URL}/api/profile/${storedUid}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ mood: selectDark ? "Dark" : "Light" })
+      });
+    } catch(e) {}
   };
 
   return (
@@ -64,7 +108,7 @@ const ProfileScreen: React.FC = () => {
       
       <ScrollView contentContainerStyle={styles.scrollContainer} showsVerticalScrollIndicator={false}>
         
-        {/* --- Header with Back Button --- */}
+        {/* Header with Back Button */}
         <View style={styles.header}>
           <TouchableOpacity 
             onPress={() => navigation.goBack()} 
@@ -73,7 +117,8 @@ const ProfileScreen: React.FC = () => {
             <Ionicons name="arrow-back" size={26} color={theme.text} />
           </TouchableOpacity>
           <Text style={[styles.headerTitle, { color: theme.text }]}>{t('profileTitle')}</Text>
-          <View style={{ width: 26 }} /> {/* Empty view to keep title centered */}
+          {/* Empty view to keep title centered */}
+          <View style={{ width: 26 }} />
         </View>
 
         {/* --- Profile Info Card --- */}
@@ -81,8 +126,8 @@ const ProfileScreen: React.FC = () => {
           <View style={styles.avatarContainer}>
             <Ionicons name="person" size={40} color="#FFF" />
           </View>
-          <Text style={[styles.userName, { color: theme.text }]}>Plant Lover</Text>
-          <Text style={[styles.userEmail, { color: theme.subText }]}>hello@teera.com</Text>
+          <Text style={[styles.userName, { color: theme.text }]}>{userData?.full_name || 'Loading...'}</Text>
+          <Text style={[styles.userEmail, { color: theme.subText }]}>{userData?.email || ''}</Text>
 
           <TouchableOpacity 
             style={styles.editButton} 

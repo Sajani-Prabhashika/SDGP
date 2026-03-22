@@ -1,40 +1,89 @@
 import React, { useState } from 'react';
-import { 
-  StyleSheet, 
-  Text, 
-  View, 
-  TextInput, 
-  TouchableOpacity, 
-  SafeAreaView, 
+import {
+  StyleSheet,
+  Text,
+  View,
+  TextInput,
+  TouchableOpacity,
+  SafeAreaView,
   StatusBar,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
-  Alert // Correctly imported Alert
+  Alert,
+  ActivityIndicator
 } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { useNavigation } from '@react-navigation/native';
 import { useTheme } from '../ThemeContext';
+import { BASE_URL } from '../config';
 
 const LoginPage: React.FC = () => {
   const navigation = useNavigation<any>();
   const { theme, isDark } = useTheme();
-  
+
   const [username, setUsername] = useState<string>('');
   const [password, setPassword] = useState<string>('');
   const [showPassword, setShowPassword] = useState<boolean>(false);
+  const [loading, setLoading] = useState<boolean>(false);
 
-  const handleLogin = () => {
-  if (username.trim() !== '' && password.trim() !== '') {
-    // Replace 'Login' with 'Home' so 'Back' doesn't go back to Login
-    navigation.reset({
-      index: 0,
-      routes: [{ name: 'Home' }],
-    });
-  } else {
-    Alert.alert("Error", "Please enter your details"); //
-  }
-};
+  const handleLogin = async () => {
+    if (username.trim() === '' || password.trim() === '') {
+      Alert.alert("Error", "Please enter your details");
+      return;
+    }
+
+    setLoading(true);
+
+    // 10-second timeout using AbortController
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 10000);
+
+    try {
+      console.log('Attempting login to:', `${BASE_URL}/api/signin`);
+
+      const response = await fetch(`${BASE_URL}/api/signin`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: username.trim(), password: password.trim() }),
+        signal: controller.signal
+      });
+
+      clearTimeout(timeoutId);
+      const data = await response.json();
+      console.log('Login response:', response.status, data);
+
+      if (response.ok) {
+        if (data.uid) {
+          await AsyncStorage.setItem('user_uid', data.uid);
+        }
+        navigation.reset({ index: 0, routes: [{ name: 'Home' }] });
+      } else {
+        Alert.alert("Login Failed", data.error || "Invalid email or password.");
+      }
+    } catch (error: any) {
+      clearTimeout(timeoutId);
+      console.error('Login error:', error);
+
+      if (error.name === 'AbortError') {
+        Alert.alert(
+          "Connection Timeout",
+          `Could not reach the server at ${BASE_URL}.
+
+Make sure:
+• The backend is running (python app.py)
+• Your phone and computer are on the same Wi-Fi`
+        );
+      } else {
+        Alert.alert("Network Error", `Could not connect to the server.
+
+Details: ${error.message}`);
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: isDark ? theme.background : '#F0F9F1' }]}>
@@ -79,8 +128,19 @@ const LoginPage: React.FC = () => {
               </TouchableOpacity>
             </View>
 
-            <TouchableOpacity style={styles.button} onPress={handleLogin}>
-              <Text style={styles.buttonText}>Log In</Text>
+            <TouchableOpacity 
+              style={[styles.button, loading && { opacity: 0.7 }]} 
+              onPress={handleLogin}
+              disabled={loading}
+            >
+              {loading ? (
+                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                  <ActivityIndicator color="#FFFFFF" size="small" />
+                  <Text style={[styles.buttonText, { marginLeft: 10 }]}>Logging in...</Text>
+                </View>
+              ) : (
+                <Text style={styles.buttonText}>Log In</Text>
+              )}
             </TouchableOpacity>
 
             <View style={styles.footerRow}>

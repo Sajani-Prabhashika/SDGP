@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -10,20 +10,45 @@ import {
   Image,
   Alert, // For the Yes/No popup
 } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { useNavigation } from '@react-navigation/native';
 import { launchImageLibrary } from 'react-native-image-picker'; // For Gallery
 import { useTheme } from '../ThemeContext'; 
+import { BASE_URL } from '../config';
 
 const EditProfileScreen = () => {
   const navigation = useNavigation<any>();
   const { theme, isDark } = useTheme(); // Global theme state
 
   // Profile States
-  const [name, setName] = useState('Wasantha Ranasinghe');
-  const [email, setEmail] = useState('wasantha@gmail.com');
-  const [phone, setPhone] = useState('+94 77 123 4567');
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [phone, setPhone] = useState('');
   const [profilePic, setProfilePic] = useState("https://via.placeholder.com/120");
+  const [base64Photo, setBase64Photo] = useState<string | null>(null);
+
+  useEffect(() => {
+    fetchProfile();
+  }, []);
+
+  const fetchProfile = async () => {
+    try {
+      const storedUid = await AsyncStorage.getItem('user_uid') || 'test_uid_123';
+      const res = await fetch(`${BASE_URL}/api/profile/${storedUid}`);
+      const data = await res.json();
+      if (res.ok) {
+        setName(data.full_name || '');
+        setEmail(data.email || '');
+        setPhone(data.phone_number || '');
+        if (data.profile_photo) {
+          setProfilePic(data.profile_photo);
+        }
+      }
+    } catch (error) {
+      console.error(error);
+    }
+  };
 
   // --- Logic to change photo ---
   const handlePhotoPress = () => {
@@ -48,21 +73,55 @@ const EditProfileScreen = () => {
     const options: any = {
       mediaType: 'photo',
       quality: 1,
+      includeBase64: true, // Request Base64 data to send to backend
     };
 
     const result = await launchImageLibrary(options);
 
     if (result.assets && result.assets.length > 0) {
       const uri = result.assets[0].uri;
+      const base64 = result.assets[0].base64;
       if (uri) {
         setProfilePic(uri); // Updates the UI with selected photo
+      }
+      if (base64) {
+        // Prepare the base64 string for the backend
+        setBase64Photo(`data:${result.assets[0].type};base64,${base64}`);
       }
     }
   };
 
-  const handleSave = () => {
-    Alert.alert("Success", "Profile updated successfully!");
-    navigation.goBack();
+  const handleSave = async () => {
+    try {
+      const payload: any = {
+        full_name: name,
+        email: email,
+        phone_number: phone
+      };
+
+      // Only send photo if it was changed
+      if (base64Photo) {
+        payload.profile_photo = base64Photo;
+      }
+      
+      const storedUid = await AsyncStorage.getItem('user_uid') || 'test_uid_123';
+      const res = await fetch(`${BASE_URL}/api/profile/${storedUid}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      
+      const data = await res.json();
+      if (res.ok) {
+        Alert.alert("Success", "Profile updated successfully!");
+        navigation.goBack();
+      } else {
+        Alert.alert("Error", data.error || "Failed to update profile.");
+      }
+    } catch(e) {
+      console.error(e);
+      Alert.alert("Error", "Network connection failed.");
+    }
   };
 
   return (

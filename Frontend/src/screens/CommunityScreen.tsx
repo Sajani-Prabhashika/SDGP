@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { 
   StyleSheet, 
   Text, 
@@ -10,55 +10,60 @@ import {
   SafeAreaView,
   Dimensions,
   StatusBar,
-  Platform
+  Platform,
+  ActivityIndicator
 } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { useTheme } from '../ThemeContext';
+// Added this to handle moving between screens
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
+import { BASE_URL } from '../config';
 
 const { width } = Dimensions.get('window');
 
-
-const POSTS_DATA = [
-  {
-    id: '1',
-    userName: 'Kusal Mendis',
-    userHandle: '@kusal_plants',
-    userImg: 'https://i.pravatar.cc/150?u=kusal',
-    postText: 'මගේ ගහේ කොළ ටිකක් කහ පාට වේගෙන එනවා. මේක රෝගයක්ද නැත්නම් වතුර මදි කමද? 🤔 #PlantCare ',
-    postImg: 'https://images.unsplash.com/photo-1599940824399-b87987ceb72a?w=800',
-    likes: 124,
-    comments: 18,
-    time: '2h',
-    isVerified: true
-  },
-  {
-    id: '2',
-    userName: 'Nimmi Perera',
-    userHandle: '@nimmi_garden',
-    userImg: 'https://i.pravatar.cc/150?u=nimmi',
-    postText: 'Finally my orchids are blooming! 🌸 මෙන්න රහස: මම සතියකට පාරක් පොල්කිරි මිශ්‍රණයක් පාවිච්චි කළා.',
-    postImg: 'https://images.unsplash.com/photo-1518531933037-91b2f5f229cc?w=800',
-    likes: 342,
-    comments: 45,
-    time: '5h',
-    isVerified: false
-  }
-];
-
 export default function CommunityScreen() {
   const { theme } = useTheme();
+  const navigation = useNavigation<any>(); // Hook to control navigation
+  
+  // State for dynamic posts from backend
+  const [posts, setPosts] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  // Track which posts are liked locally
   const [likedPosts, setLikedPosts] = useState<string[]>([]);
+
+  const fetchPosts = async () => {
+    setLoading(true);
+    try {
+      const response = await fetch(`${BASE_URL}/api/posts`);
+      const data = await response.json();
+      if (response.ok) {
+        setPosts(data);
+      }
+    } catch (error) {
+      console.error("Failed to fetch posts:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useFocusEffect(
+    useCallback(() => {
+      fetchPosts();
+    }, [])
+  );
 
   const toggleLike = (id: string) => {
     setLikedPosts(prev => prev.includes(id) ? prev.filter(p => p !== id) : [...prev, id]);
   };
 
-  const renderItem = ({ item }: { item: typeof POSTS_DATA[0] }) => {
+  // This function builds each post card in the list
+  const renderItem = ({ item }: { item: any }) => {
     const isLiked = likedPosts.includes(item.id);
 
     return (
       <View style={[styles.postCard, { backgroundColor: theme.card, borderBottomColor: theme.border }]}>
-        {/* User Info Header */}
+        {/* Profile info and more options */}
         <View style={styles.postHeader}>
           <Image source={{ uri: item.userImg }} style={styles.avatar} />
           <View style={styles.nameContainer}>
@@ -73,14 +78,14 @@ export default function CommunityScreen() {
           </TouchableOpacity>
         </View>
 
-        {/* Post Content */}
+        {/* The actual post message and shared image */}
         <Text style={[styles.postBody, { color: theme.text }]}>{item.postText}</Text>
         
         {item.postImg && (
           <Image source={{ uri: item.postImg }} style={styles.postImage} />
         )}
 
-        {/* Interaction Bar */}
+        {/* Like, Comment, and Share buttons */}
         <View style={styles.actionRow}>
           <TouchableOpacity style={styles.actionBtn} onPress={() => toggleLike(item.id)}>
             <Ionicons 
@@ -93,31 +98,10 @@ export default function CommunityScreen() {
             </Text>
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.actionBtn}>
-            <Ionicons name="chatbubble-outline" size={20} color={theme.subText} />
-            <Text style={[styles.actionText, { color: theme.subText }]}>{item.comments}</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity style={styles.actionBtn}>
-            <Ionicons name="repeat-outline" size={22} color={theme.subText} />
-          </TouchableOpacity>
-
-          <TouchableOpacity style={styles.actionBtn}>
-            <Ionicons name="share-outline" size={20} color={theme.subText} />
-          </TouchableOpacity>
+          {/* Only Like/Heart button remains as requested */}
         </View>
 
-        {/* Quick Comment Input */}
-        <View style={styles.commentRow}>
-           <Image source={{ uri: 'https://i.pravatar.cc/150?u=my_user' }} style={styles.smallAvatar} />
-           <View style={[styles.inputField, { backgroundColor: theme.background }]}>
-              <TextInput 
-                placeholder="Post your reply..." 
-                placeholderTextColor={theme.subText}
-                style={{ color: theme.text, paddingVertical: 5, fontSize: 13 }}
-              />
-           </View>
-        </View>
+        
       </View>
     );
   };
@@ -126,7 +110,7 @@ export default function CommunityScreen() {
     <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
       <StatusBar barStyle={theme.dark ? "light-content" : "dark-content"} />
       
-      {/* Community Header */}
+      {/* Main Header of the screen */}
       <View style={[styles.topNav, { borderBottomColor: theme.border }]}>
         <Image source={{ uri: 'https://i.pravatar.cc/150?u=my_user' }} style={styles.topAvatar} />
         <Text style={[styles.topTitle, { color: theme.text }]}>Teera Community</Text>
@@ -135,17 +119,31 @@ export default function CommunityScreen() {
         </TouchableOpacity>
       </View>
 
-      <FlatList
-        data={POSTS_DATA}
-        renderItem={renderItem}
-        keyExtractor={item => item.id}
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingBottom: 100 }}
-      />
+      {/* The scrolling feed of plant posts */}
+      {loading && posts.length === 0 ? (
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+          <ActivityIndicator size="large" color="#437C60" />
+        </View>
+      ) : (
+        <FlatList
+          data={posts}
+          renderItem={renderItem}
+          keyExtractor={item => item.id}
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={{ paddingBottom: 100 }}
+          refreshing={loading}
+          onRefresh={fetchPosts}
+        />
+      )}
 
-      {/* Floating Action Button (New Post) */}
-      <TouchableOpacity style={styles.fab}>
-        <Ionicons name="add" size={30} color="#FFF" />
+      {/* IMPORTANT: This is the Plus Button. 
+          When clicked, it links to the 'CreatePost' screen we registered in App.tsx.
+      */}
+      <TouchableOpacity 
+        style={styles.fab} 
+        onPress={() => navigation.navigate('CreatePost')}
+      >
+        <Ionicons name="add" size={34} color="#FFF" />
       </TouchableOpacity>
     </SafeAreaView>
   );
@@ -221,17 +219,18 @@ const styles = StyleSheet.create({
 
   fab: {
     position: 'absolute',
-    bottom: 25,
-    right: 20,
+    bottom: 30,
+    right: 25,
     backgroundColor: '#437C60',
-    width: 60,
-    height: 60,
-    borderRadius: 30,
+    width: 65,
+    height: 65,
+    borderRadius: 35,
     justifyContent: 'center',
     alignItems: 'center',
-    elevation: 5,
-    shadowColor: '#000',
+    elevation: 8, // Adds shadow for Android
+    shadowColor: '#000', // Adds shadow for iOS
     shadowOpacity: 0.3,
-    shadowRadius: 5
+    shadowRadius: 5,
+    shadowOffset: { width: 0, height: 4 }
   }
 });

@@ -11,19 +11,10 @@ import {
   KeyboardAvoidingView,
   Platform,
   StatusBar,
-  ImageBackground,
 } from 'react-native';
-import { OpenRouter } from '@openrouter/sdk';
 import Ionicons from 'react-native-vector-icons/Ionicons';
-import { useTheme } from '../ThemeContext'; // Assuming your theme context path
-
-const OPENROUTER_API_KEY = 'YOUR_ACTUAL_API_KEY';
-
-// 1. Initialize OpenRouter
-const OPENROUTER_API_KEY = 'AIzaSyDjBIwuscn8X5S--r3RvHprliAoRR0oJq4';
-const openRouter = new OpenRouter({
-  apiKey: OPENROUTER_API_KEY,
-});
+import { useTheme } from '../ThemeContext'; 
+import { BASE_URL } from '../config';
 
 interface Message {
   id: string;
@@ -40,13 +31,6 @@ export default function ChatScreen() {
   const [loading, setLoading] = useState(false);
   const flatListRef = useRef<FlatList>(null);
 
-  // Function to Clear Chat (Your 10th Commit Change)
-  const clearChat = () => {
-    setMessages([
-      { id: Date.now().toString(), role: 'assistant', content: 'Chat cleared. How can I help you now?' },
-    ]);
-  };
-
   const sendMessage = async () => {
     if (!inputText.trim() || loading) return;
 
@@ -62,24 +46,20 @@ export default function ChatScreen() {
     setLoading(true);
 
     try {
-      const completion = await openRouter.chat.send({
-        model: 'deepseek/deepseek-r1:free',
-        messages: [
-          { role: 'system', content: 'You are Teera, a knowledgeable plant care expert. Provide concise, helpful advice.' },
-          ...messages.slice().reverse().map(m => ({ role: m.role, content: m.content })),
-          { role: 'user', content: currentInput }
-          { role: 'system', content: 'You are Teera, a helpful AI assistant.' },
-          ...messages.slice().reverse().map((m) => ({ role: m.role, content: m.content })),
-          { role: 'user', content: currentInput },
-        ],
-      } as any);
-
-      const aiResponse = completion.choices[0].message.content as string;
+      // Routing through our secure Python backend
+      const response = await fetch(`${BASE_URL}/api/chat`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: currentInput })
+      });
+      const data = await response.json();
+      
+      const aiResponse = response.ok ? data.reply : "I am having trouble connecting to my brain right now.";
 
       const aiMsg: Message = {
         id: (Date.now() + 1).toString(),
         role: 'assistant',
-        content: aiResponse || 'I am sorry, I am having trouble thinking right now.',
+        content: aiResponse,
       };
 
       setMessages((prev) => [aiMsg, ...prev]);
@@ -102,7 +82,7 @@ export default function ChatScreen() {
       {/* Header */}
       <View style={[styles.header, { backgroundColor: theme.card, borderColor: theme.border }]}>
         <Text style={[styles.headerTitle, { color: theme.text }]}>Teera AI 🌿</Text>
-        <Text style={[styles.headerStatus, { color: '#2E7D32' }]}>DeepSeek R1 Online</Text>
+        <Text style={[styles.headerStatus, { color: '#2E7D32' }]}>Online (Free API)</Text>
       </View>
 
       {/* Chat History */}
@@ -129,64 +109,23 @@ export default function ChatScreen() {
           </View>
         )}
       />
-    <SafeAreaView style={styles.container}>
-      {/* Updated Header with Clear Button */}
-      <View style={styles.header}>
-        <View style={{ width: 60 }} /> {/* Spacer to center title */}
-        <Text style={styles.headerTitle}>Teera AI 🌿</Text>
-        <TouchableOpacity onPress={clearChat} style={styles.clearButton}>
-          <Text style={styles.clearButtonText}>Clear</Text>
-        </TouchableOpacity>
-      </View>
-
-      {/* Background Image Wrap */}
-      <ImageBackground
-        source={require('../../src/assets/background.png')} 
-        style={styles.backgroundImage}
-        resizeMode="cover"
-      >
-        <FlatList
-          ref={flatListRef}
-          data={messages}
-          inverted
-          keyExtractor={(item) => item.id}
-          contentContainerStyle={styles.listContent}
-          renderItem={({ item }) => (
-            <View style={[
-              styles.bubble,
-              item.role === 'user' ? styles.userBubble : styles.aiBubble
-            ]}>
-              <Text style={item.role === 'user' ? styles.userText : styles.aiText}>
-                {item.content}
-              </Text>
-            </View>
-          )}
-        />
-      </ImageBackground>
 
       {/* Input Section */}
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        verticalOffset={Platform.OS === 'ios' ? 0 : 20}
       >
         <View style={[styles.inputContainer, { backgroundColor: theme.card, borderTopColor: theme.border }]}>
           <TextInput
             style={[styles.input, { backgroundColor: theme.background, color: theme.text }]}
             placeholder="Ask about plant care..."
             placeholderTextColor={theme.subText}
-            style={styles.input}
-            placeholder="Message Teera..."
-            placeholderTextColor="#999"
             value={inputText}
             onChangeText={setInputText}
             multiline
           />
           <TouchableOpacity 
             style={[styles.sendButton, { opacity: loading || !inputText.trim() ? 0.6 : 1 }]} 
-          <TouchableOpacity
-            style={[styles.sendButton, { opacity: loading ? 0.5 : 1 }]}
             onPress={sendMessage}
             disabled={loading || !inputText.trim()}
           >
@@ -206,10 +145,6 @@ const styles = StyleSheet.create({
   container: { flex: 1 },
   header: {
     paddingVertical: 15,
-    padding: 16,
-    backgroundColor: '#1B5E20',
-    flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
     borderBottomWidth: 1,
     elevation: 2,
@@ -220,16 +155,6 @@ const styles = StyleSheet.create({
   headerTitle: { fontSize: 18, fontWeight: '700' },
   headerStatus: { fontSize: 12, fontWeight: '600', marginTop: 2 },
   listContent: { paddingVertical: 20, paddingHorizontal: 15 },
-  headerTitle: { color: '#fff', fontSize: 20, fontWeight: 'bold' },
-  clearButton: {
-    backgroundColor: 'rgba(255,255,255,0.2)',
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 8,
-  },
-  clearButtonText: { color: '#fff', fontSize: 12, fontWeight: 'bold' },
-  backgroundImage: { flex: 1, width: '100%' },
-  listContent: { paddingVertical: 10 },
   bubble: {
     marginVertical: 4,
     padding: 14,
@@ -246,7 +171,6 @@ const styles = StyleSheet.create({
   },
   aiBubble: {
     alignSelf: 'flex-start',
-    backgroundColor: 'rgba(255, 255, 255, 0.95)',
     borderWidth: 1,
     borderBottomLeftRadius: 4,
   },
@@ -277,18 +201,4 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-    minHeight: 40,
-    backgroundColor: '#F1F3F4',
-    borderRadius: 20,
-    paddingHorizontal: 16,
-    marginRight: 8,
-    color: '#000'
-  },
-  sendButton: {
-    backgroundColor: '#1B5E20',
-    paddingVertical: 10,
-    paddingHorizontal: 18,
-    borderRadius: 20,
-  },
-  sendButtonText: { color: '#020000', fontWeight: 'bold' },
 });
