@@ -143,3 +143,6 @@ python start_servers.py
 
 ---
 
+## 📝 API Documentation
+
+For a detailed list of available API endpoints and their usage, please refer to [API_DOCUMENTATION.md](API_DOCUMENTATION.md).
