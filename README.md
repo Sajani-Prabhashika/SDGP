@@ -95,7 +95,8 @@ It is highly recommended to use a virtual environment to manage dependencies.
 ```powershell
 # Create a virtual environment
 python -m venv venv
-
+```
+```powershell
 # Activate the virtual environment (Windows)
 .\venv\Scripts\activate
 ```
