@@ -26,17 +26,7 @@ db = firestore.client()
 app = Flask(__name__)
 CORS(app) 
 
-# Twilio Credentials (Use your actual SID and Token)
-TWILIO_ACCOUNT_SID = 'your_account_sid'
-TWILIO_AUTH_TOKEN = 'your_auth_token'
-TWILIO_NUMBER = '+1234567890'
-client = Client(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN)
 
-# Twilio Credentials (Use your actual SID and Token)
-TWILIO_ACCOUNT_SID = 'your_account_sid'
-TWILIO_AUTH_TOKEN = 'your_auth_token'
-TWILIO_NUMBER = '+1234567890'
-client = Client(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN)
 
 # --- ML MODEL INITIALIZATION ---
 WEIGHTS_PATH = "cinnamon_disease_model.keras/model.weights.h5"
@@ -61,3 +51,112 @@ else:
     print(f"WARNING: Model weights file {WEIGHTS_PATH} not found!")
     disease_model = None
 
+# --- BACKGROUND REMINDER TASK ---
+def check_and_send_reminders():
+    # This thread wakes up every hour to see if any reminders are scheduled for today
+    while True:
+        try:
+            today_str = datetime.now(timezone.utc).strftime('%Y-%m-%d')
+            users_stream = db.collection('users').stream()
+            
+            for user_doc in users_stream:
+                user_data = user_doc.to_dict()
+                user_ref = user_doc.reference
+                
+                # Fetch only un-notified reminders for this user
+                reminders_query = user_ref.collection('reminders').where('notified', '==', False).stream()
+                
+                for doc in reminders_query:
+                    rem_data = doc.to_dict()
+                    
+                    if rem_data.get('date') == today_str:
+                        fcm_token = user_data.get('fcm_token')
+                        
+                        if fcm_token:
+                            try:
+                                message = messaging.Message(
+                                    notification=messaging.Notification(
+                                        title=f"Reminder: {rem_data.get('name')}",
+                                        body=rem_data.get('description', 'You have a scheduled task for today.')
+                                    ),
+                                    token=fcm_token,
+                                )
+                                messaging.send(message)
+                            except Exception as e:
+                                print(f"Firebase Messaging Error for {user_doc.id}: {e}")
+                                
+                        # Mark as notified whether they have a token or not, so we don't retry forever
+                        doc.reference.update({"notified": True})
+                        
+        except Exception as e:
+            print(f"Reminder background task error: {e}")
+            
+        # Run checks every 1 hour (3600 seconds)
+        time.sleep(3600)
+
+reminder_thread = threading.Thread(target=check_and_send_reminders, daemon=True)
+reminder_thread.start()
+
+# --- ROUTES ---
+
+@app.route('/api/signup', methods=['POST'])
+def signup():
+    data = request.json
+    email = data.get('email')
+    phone = data.get('phone_number')
+    full_name = data.get('full_name')
+    password = data.get('password')
+
+    # 1. Check if phone exists
+    existing_user = db.collection('users').where('phone_number', '==', phone).limit(1).get()
+    if len(existing_user) > 0:
+        return jsonify({"message": f"You have already signed up with {phone}."}), 400
+
+    # 2. Sign up to Firebase Auth via REST API to get idToken
+    signup_url = f"https://identitytoolkit.googleapis.com/v1/accounts:signUp?key={FIREBASE_WEB_API_KEY}"
+    req = requests.post(signup_url, json={"email": email, "password": password, "returnSecureToken": True})
+    
+    if req.status_code != 200:
+        error_msg = req.json().get('error', {}).get('message', 'Signup failed')
+        return jsonify({"error": error_msg}), 400
+        
+    resp_data = req.json()
+    uid = resp_data['localId']
+    id_token = resp_data['idToken']
+    
+    # 3. Trigger Firebase Email Verification
+    verify_url = f"https://identitytoolkit.googleapis.com/v1/accounts:sendOobCode?key={FIREBASE_WEB_API_KEY}"
+    verify_req = requests.post(verify_url, json={"requestType": "VERIFY_EMAIL", "idToken": id_token})
+    if verify_req.status_code != 200:
+        return jsonify({"error": "Failed to send verification email"}), 500
+
+    # 4. Create permanent user document in Firestore immediately
+    db.collection('users').document(uid).set({
+        "full_name": full_name,
+        "email": email,
+        "phone_number": phone,
+        "preferences": {"mood": "Light", "language": "English"},
+        "joined_at": firestore.SERVER_TIMESTAMP
+    })
+    
+    return jsonify({"message": "Verification email sent. Please check your inbox before signing in."}), 200
+
+@app.route('/api/posts', methods=['GET', 'POST'])
+def manage_posts():
+    if request.method == 'POST':
+        try:
+            # Handle post text, image, and form data
+            uid = request.form.get('uid')
+            post_text = request.form.get('postText', '')
+            
+            if not uid:
+                return jsonify({"error": "User UID is required"}), 400
+
+            # 1. Image upload handling
+            image_url = None
+            if 'image' in request.files:
+                file = request.files['image']
+                if file.filename != '':
+                    filename = f"{uuid.uuid4().hex}_{file.filename}"
+                    file.save(os.path.join(UPLOAD_FOLDER, filename))
+                    image_url = f"{request.host_url}uploads/{filename}"
