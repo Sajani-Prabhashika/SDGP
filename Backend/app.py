@@ -141,3 +141,22 @@ def signup():
     
     return jsonify({"message": "Verification email sent. Please check your inbox before signing in."}), 200
 
+@app.route('/api/posts', methods=['GET', 'POST'])
+def manage_posts():
+    if request.method == 'POST':
+        try:
+            # Handle post text, image, and form data
+            uid = request.form.get('uid')
+            post_text = request.form.get('postText', '')
+            
+            if not uid:
+                return jsonify({"error": "User UID is required"}), 400
+
+            # 1. Image upload handling
+            image_url = None
+            if 'image' in request.files:
+                file = request.files['image']
+                if file.filename != '':
+                    filename = f"{uuid.uuid4().hex}_{file.filename}"
+                    file.save(os.path.join(UPLOAD_FOLDER, filename))
+                    image_url = f"{request.host_url}uploads/{filename}"
