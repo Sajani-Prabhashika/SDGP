@@ -343,3 +343,117 @@ def signin():
             return jsonify({"error": error_message}), 401
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
+
+@app.route('/api/analyze', methods=['POST'])
+def analyze_leaf():
+    if not disease_model:
+        return jsonify({"error": "ML model is not loaded on the server."}), 500
+
+    if 'file' not in request.files:
+        return jsonify({"error": "No file part in the request"}), 400
+        
+    file = request.files['file']
+    if file.filename == '':
+        return jsonify({"error": "No selected file"}), 400
+
+    try:
+        # 1. Read the image
+        img_bytes = file.read()
+        img = Image.open(io.BytesIO(img_bytes)).convert('RGB')
+        
+        # 2. Resize to 224x224 (required by MobileNetV2)
+        img = img.resize((224, 224))
+        
+        # 3. Convert to numpy array and preprocess
+        img_array = np.array(img)
+        # MobileNetV2 uses preprocess_input which maps 0-255 to -1 to 1
+        img_array = tf.keras.applications.mobilenet_v2.preprocess_input(img_array)
+        
+        # Add batch dimension
+        img_batch = np.expand_dims(img_array, axis=0)
+        
+        # 4. Predict
+        predictions = disease_model.predict(img_batch, verbose=0)
+        
+        # The output is [1, 2] probability array
+        confidence_scores = predictions[0]
+        predicted_class_idx = int(np.argmax(confidence_scores))
+        confidence_percentage = float(np.max(confidence_scores)) * 100
+        
+        # 5. Map to UI format
+        # Index 0 = Healthy, Index 1 = Rough Bark Disease
+        if predicted_class_idx == 0:
+            result = {
+                "diagnosis": "Healthy",
+                "confidence": f"{int(confidence_percentage)}%",
+                "severity": "None",
+                "description": "The leaf appears healthy with no visible signs of disease."
+            }
+        else:
+            result = {
+                "diagnosis": "Rough Bark Disease",
+                "confidence": f"{int(confidence_percentage)}%",
+                "severity": "Medium",
+                "description": "Early symptoms of bark cracking or infection observed. Recommended to isolate the plant and treat accordingly."
+            }
+            
+            # Extract location and uploader info from form data
+            loc_name = request.form.get('location_name')
+            uploader_uid = request.form.get('uid')
+            
+            # If we have a location name, trigger alerts to others in the same area
+            if loc_name:
+                loc_name_lower = loc_name.strip().lower()
+                
+                users_ref = db.collection('users')
+                all_users = users_ref.stream()
+                
+                batch = db.batch()
+                notifications_created = 0
+                
+                for user_doc in all_users:
+                    if user_doc.id == uploader_uid:
+                        continue # Don't alert the person who just uploaded it
+                        
+                    user_data = user_doc.to_dict()
+                    user_loc = user_data.get('location_name')
+                    
+                    if user_loc and user_loc.strip().lower() == loc_name_lower:
+                        # Create a notification in Firestore
+                        notif_ref = db.collection('notifications').document()
+                        batch.set(notif_ref, {
+                            "user_uid": user_doc.id,
+                            "type": "disease_alert",
+                            "title": "Disease Alert in Your Area",
+                            "message": f"Rough Bark Disease was detected in {user_loc}. Please check your plants.",
+                            "location_name": user_loc,
+                            "created_at": firestore.SERVER_TIMESTAMP,
+                            "read": False
+                        })
+                        
+                        # Trigger FCM Push Notification
+                        fcm_token = user_data.get('fcm_token')
+                        if fcm_token:
+                            try:
+                                message = messaging.Message(
+                                    notification=messaging.Notification(
+                                        title="Disease Alert in Your Area",
+                                        body=f"Rough Bark Disease was detected in {user_loc}. Please check your plants."
+                                    ),
+                                    token=fcm_token,
+                                )
+                                messaging.send(message)
+                            except Exception as e:
+                                print(f"Failed to send FCM to {user_doc.id}: {e}")
+                                
+                        notifications_created += 1
+                
+                if notifications_created > 0:
+                    batch.commit()
+
+            
+        return jsonify(result), 200
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
