@@ -148,6 +148,12 @@ python start_servers.py
 
 ---
 
+4. SetUp the environment to run python script to run ML model
+###Open Google Colab
+- Go to: https://colab.research.google.com
+- Sign in with your Google account
+- Click “New Notebook”
+
 ## 📝 API Documentation
 
 For a detailed list of available API endpoints and their usage, please refer to [API_DOCUMENTATION.md](API_DOCUMENTATION.md).
