@@ -1,30 +1,33 @@
-import React, { useEffect, useState, useRef } from 'react';
-import { 
-  View, 
-  Text, 
-  StyleSheet, 
-  ActivityIndicator, 
-  TouchableOpacity, 
+import React, { useEffect, useState, useRef, useCallback } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  ActivityIndicator,
+  TouchableOpacity,
   Alert,
   Animated,
   Dimensions
 } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Camera, useCameraDevice } from 'react-native-vision-camera';
 import Ionicons from 'react-native-vector-icons/Ionicons';
-import { useNavigation } from '@react-navigation/native'; // Navigation එක සඳහා
+import { useNavigation, useFocusEffect } from '@react-navigation/native'; // Added useFocusEffect
+import { BASE_URL } from '../config';
 
 const { width } = Dimensions.get('window');
-const SCAN_BOX_SIZE = width * 0.7; 
+const SCAN_BOX_SIZE = width * 0.7;
 
 const Scanpage = () => {
   const navigation = useNavigation<any>(); // Navigation object එක initialize කිරීම
   const [hasPermission, setHasPermission] = useState<boolean | null>(null);
   const [flash, setFlash] = useState<'on' | 'off'>('off');
-  
-  const cameraRef = useRef<Camera>(null); 
-  const device = useCameraDevice('back');
+  const [locationName, setLocationName] = useState<string>('Unknown');
+  const [userUid, setUserUid] = useState<string>('test_uid_123');
 
+  const cameraRef = useRef<Camera>(null);
   const scanLineAnim = useRef(new Animated.Value(0)).current;
+  const device = useCameraDevice('back');
 
   useEffect(() => {
     (async () => {
@@ -46,7 +49,31 @@ const Scanpage = () => {
         })
       ])
     ).start();
-  }, [scanLineAnim]);
+  }, [scanLineAnim, SCAN_BOX_SIZE]);
+
+  // Fetch real location and UID when the screen focuses
+  const fetchUserDetails = useCallback(async () => {
+    try {
+      const storedUid = await AsyncStorage.getItem('user_uid') || 'test_uid_123';
+      setUserUid(storedUid);
+      
+      const res = await fetch(`${BASE_URL}/api/profile/${storedUid}`);
+      if (res.ok) {
+        const data = await res.json();
+        if (data?.location_name) {
+          setLocationName(data.location_name);
+        }
+      }
+    } catch (error) {
+      console.error("Error fetching user details in Scanpage:", error);
+    }
+  }, []);
+
+  useFocusEffect(
+    useCallback(() => {
+      fetchUserDetails();
+    }, [fetchUserDetails])
+  );
 
   // --- Photo එක ගත්තට පස්සේ Result Page එකට යෑම ---
   const takePhoto = async () => {
@@ -54,12 +81,59 @@ const Scanpage = () => {
       try {
         const photo = await cameraRef.current.takePhoto({ flash: flash });
         console.log("Photo saved at:", photo.path);
+
+        const photoUri = `file://${photo.path}`;
+
+        const formData = new FormData();
+        // Field name must be 'file' to match backend analyze route
+        formData.append('file', {
+          uri: photoUri,
+          name: 'scan.jpg',
+          type: 'image/jpeg'
+        } as any);
         
-        // Result Screen එකට Navigate කිරීම සහ photo path එක data එකක් විදිහට යැවීම
-        navigation.navigate('Result', { photoPath: photo.path });
+        // Use fetched values instead of hardcoded ones
+        formData.append('location_name', locationName);
+        formData.append('uid', userUid);
+
+        const response = await fetch(`${BASE_URL}/api/analyze`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'multipart/form-data',
+          },
+          body: formData,
+        });
+
+        const data = await response.json();
         
+        if (response.ok && !data.Error) {
+          // Backend returns { diagnosis: "...", confidence: "98%", ... }
+          // Scanpage.tsx originally expected 'Disease' and 'Confidence' (number)
+          
+          const diagnosis = data.diagnosis || "Unknown";
+          const confidenceStr = data.confidence || "0%";
+          const severity = data.severity || "Low";
+          const description = data.description || "No description available.";
+          const confidenceNum = parseFloat(confidenceStr.replace('%', '')) / 100;
+
+          const predictionText = `${diagnosis} (${confidenceStr} confidence)`;
+          
+          navigation.navigate('Result', { 
+            imageUri: photoUri,
+            prediction: diagnosis,
+            diagnosisText: predictionText,
+            confidence: confidenceStr, // Pass string for easier display
+            severity: severity,
+            description: description,
+            category: "Fungal" // Fallback category for UI
+          });
+        } else {
+          Alert.alert("Analysis Failed", data.Error || data.error || "Could not analyze image.");
+        }
+
       } catch (error) {
-        Alert.alert("Error", "Failed to take photo.");
+        console.error(error);
+        Alert.alert("Error", "Failed to take photo or connect to server.");
       }
     }
   };
@@ -83,16 +157,16 @@ const Scanpage = () => {
         style={StyleSheet.absoluteFill}
         device={device}
         isActive={true}
-        photo={true} 
+        photo={true}
       />
 
       <View style={styles.overlay}>
-        
+
         {/* Top Bar with Back Button & Flash */}
         <View style={styles.topBar}>
           {/* --- Back Button --- */}
-          <TouchableOpacity 
-            style={styles.iconButton} 
+          <TouchableOpacity
+            style={styles.iconButton}
             onPress={() => navigation.goBack()}
           >
             <Ionicons name="arrow-back" size={28} color="#FFF" />
@@ -100,10 +174,10 @@ const Scanpage = () => {
 
           {/* Flash Button */}
           <TouchableOpacity style={styles.iconButton} onPress={toggleFlash}>
-            <Ionicons 
-              name={flash === 'on' ? "flash" : "flash-off"} 
-              size={28} 
-              color={flash === 'on' ? "#F2C94C" : "#FFF"} 
+            <Ionicons
+              name={flash === 'on' ? "flash" : "flash-off"}
+              size={28}
+              color={flash === 'on' ? "#F2C94C" : "#FFF"}
             />
           </TouchableOpacity>
         </View>
@@ -111,11 +185,11 @@ const Scanpage = () => {
         {/* Scan Box Area */}
         <View style={styles.scanBoxContainer} pointerEvents="none">
           <View style={styles.scanBox}>
-            <Animated.View 
+            <Animated.View
               style={[
-                styles.scanLine, 
+                styles.scanLine,
                 { transform: [{ translateY: scanLineAnim }] }
-              ]} 
+              ]}
             />
           </View>
           <Text style={styles.scanText}>Position plant or code in the frame</Text>
@@ -131,7 +205,7 @@ const Scanpage = () => {
             <View style={styles.shutterButtonInner} />
           </TouchableOpacity>
 
-          <View style={{ width: 50 }} /> 
+          <View style={{ width: 50 }} />
         </View>
 
       </View>
@@ -170,7 +244,7 @@ const styles = StyleSheet.create({
   scanLine: {
     width: '100%',
     height: 3,
-    backgroundColor: '#437C60', 
+    backgroundColor: '#437C60',
     elevation: 5,
   },
   scanText: {

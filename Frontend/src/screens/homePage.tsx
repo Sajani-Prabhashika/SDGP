@@ -35,15 +35,7 @@ export default function HomeScreen() {
 
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         
-        {/* Search Bar */}
-        <View style={[styles.searchContainer, { backgroundColor: theme.card }]}>
-          <TextInput 
-            style={[styles.searchInput, { color: theme.text }]} 
-            placeholder="Search..." 
-            placeholderTextColor={theme.subText} 
-          />
-          <Ionicons name="search" size={20} color={theme.subText} style={styles.searchIcon} />
-        </View>
+        
 
         {/* Hero Banner */}
         <View style={styles.heroCard}>
@@ -93,6 +85,26 @@ export default function HomeScreen() {
             <Text style={[styles.actionText, { color: theme.text }]}>AI Chatbot</Text>
           </TouchableOpacity>
         </View>
+
+        {/* Debug Section: View Result Page Directly */}
+        <Text style={[styles.sectionTitle, { color: theme.text, marginTop: 25 }]}>Developer Tools</Text>
+        <TouchableOpacity 
+          style={[styles.fullWidthActionCard, { backgroundColor: theme.card }]} 
+          onPress={() => navigation.navigate('Result', {
+            imageUri: 'https://images.unsplash.com/photo-1542601906990-b4d3fb778b09?q=80&w=2026&auto=format&fit=crop',
+            prediction: 'Rough Bark Disease',
+            diagnosisText: 'Rough Bark Disease (88% confidence)',
+            confidence: '88%',
+            severity: 'Medium',
+            description: 'Early symptoms of bark cracking and unusual texture observed. This typically occurs due to nutrient imbalance or fungal infection.',
+            category: 'Fungal'
+          })}
+        >
+          <View style={[styles.iconWrapper, { backgroundColor: '#FFEBEE' }]}>
+            <Ionicons name="bug-outline" size={32} color="#D32F2F" />
+          </View>
+          <Text style={[styles.actionText, { color: theme.text }]}>View Sample Result (Debug)</Text>
+        </TouchableOpacity>
 
       </ScrollView>
 

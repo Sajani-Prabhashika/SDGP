@@ -1,25 +1,15 @@
-import time
-import threading
-import random
-from flask import Flask, request, jsonify
-from flask_cors import CORS
+import json
 import requests
-import io
 import os
-import numpy as np
-from PIL import Image
-os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2' # Suppress TF warnings
-import tensorflow as tf
 import firebase_admin
 from firebase_admin import credentials, firestore, auth, messaging
 from datetime import datetime, timedelta, timezone
 from twilio.rest import Client
 import uuid
 
-#--
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'  # suppress TensorFlow logs
 
-# --- INITIALIZATION ---
-# Make sure "firebase_config.json" is in your backend folder!
+# --- FIREBASE INITIALIZATION ---
 cred = credentials.Certificate("firebase_config.json")
 firebase_admin.initialize_app(cred)
 db = firestore.client()

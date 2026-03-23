@@ -1,25 +1,36 @@
-import React, { useState, useEffect } from 'react';
-import { 
-  StyleSheet, 
-  Text, 
-  View, 
-  TouchableOpacity, 
-  SafeAreaView, 
-  ActivityIndicator,
+import React from 'react';
+import {
+  StyleSheet,
+  Text,
+  View,
   Image,
-  StatusBar,
   ScrollView,
+  SafeAreaView,
+  TouchableOpacity,
   Dimensions,
+  StatusBar,
   Platform
 } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
-import { useNavigation } from '@react-navigation/native';
 import { useTheme } from '../ThemeContext';
+import { useNavigation, useRoute } from '@react-navigation/native';
 
-const { width } = Dimensions.get('window');
+const { width, height } = Dimensions.get('window');
 
-export default function ScanningFinish() {
+export default function ResultPage() {
+  const { theme, isDark } = useTheme();
   const navigation = useNavigation<any>();
+  const route = useRoute<any>();
+
+  // Extract backend data from route params
+  const prediction = route.params?.prediction || "Healthy";
+  const uploadedImage = route.params?.imageUri || "https://images.unsplash.com/photo-1542601906990-b4d3fb778b09?q=80&w=2026&auto=format&fit=crop";
+  const confidence = route.params?.confidence || "0%";
+  const severity = route.params?.severity || "Low";
+  const description = route.params?.description || "No specific details provided by the analysis.";
+  const category = route.params?.category || (prediction === "Healthy" ? "Healthy" : "Fungal");
+
+  const isIssue = prediction !== "Healthy";
   const { theme } = useTheme();
   
   const [isLoading, setIsLoading] = useState(true);
@@ -79,36 +90,61 @@ export default function ScanningFinish() {
   }
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
-      <StatusBar barStyle={theme.dark ? "light-content" : "dark-content"} backgroundColor={theme.background} />
-      
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
-        
-        {/* --- CUSTOM HEADER --- */}
-        <View style={styles.header}>
-          <TouchableOpacity 
-            style={[styles.headerIcon, { backgroundColor: theme.card }]} 
-            onPress={() => navigation.goBack()}
-          >
-            <Ionicons name="chevron-back" size={24} color={theme.text} />
-          </TouchableOpacity>
-          <Text style={[styles.headerTitle, { color: theme.text }]}>Diagnosis Result</Text>
-          <TouchableOpacity style={[styles.headerIcon, { backgroundColor: theme.card }]}>
-            <Ionicons name="share-social-outline" size={22} color={theme.text} />
-          </TouchableOpacity>
-        </View>
+    <View style={[styles.container, { backgroundColor: theme.background }]}>
+      <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
 
-        {/* --- IMAGE SECTION --- */}
-        <View style={styles.imageWrapper}>
-          <Image 
-            source={{ uri: 'https://images.unsplash.com/photo-1599940824399-b87987ceb72a?auto=format&fit=crop&w=800' }} 
-            style={styles.resultImage}
-          />
-          <View style={styles.statusBadge}>
-            <Ionicons name="alert-circle" size={16} color="#FF9800" />
-            <Text style={styles.statusBadgeText}>Issue Detected</Text>
+      {/* Background Image / Header */}
+      <View style={styles.imageHeader}>
+        <Image source={{ uri: uploadedImage }} style={styles.mainImage} />
+
+        {/* Top Navigation Overlay */}
+        <SafeAreaView style={styles.navOverlay}>
+          <View style={styles.topRow}>
+            <TouchableOpacity style={styles.navBtn} onPress={() => navigation.goBack()}>
+              <Ionicons name="chevron-back" size={24} color="#333" />
+            </TouchableOpacity>
+
+            <Text style={styles.overlayTitle}>Diagnosis Result</Text>
+
+            <TouchableOpacity style={styles.navBtn}>
+              <Ionicons name="share-social-outline" size={22} color="#333" />
+            </TouchableOpacity>
           </View>
+        </SafeAreaView>
+
+        {/* Floating Status Badge */}
+        <View style={styles.statusBadge}>
+          <Ionicons
+            name={isIssue ? "alert-circle" : "checkmark-circle"}
+            size={18}
+            color={isIssue ? "#F2994A" : "#219653"}
+          />
+          <Text style={[styles.statusBadgeText, { color: isIssue ? "#333" : "#219653" }]}>
+            {isIssue ? "Issue Detected" : "Healthy Plant"}
+          </Text>
         </View>
+      </View>
+
+      <ScrollView
+        style={styles.scrollView}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
+        {/* Spacer for the Image Header */}
+        <View style={styles.headerSpacer} />
+
+        {/* The Result Card */}
+        <View style={[styles.resultCard, { backgroundColor: '#FFF' }]}>
+
+          <View style={styles.cardHeader}>
+            <View>
+              <Text style={styles.primaryLabel}>PRIMARY DIAGNOSIS</Text>
+              <Text style={styles.diagnosisTitle}>{prediction}</Text>
+            </View>
+            <View style={[styles.categoryTag, { backgroundColor: isIssue ? '#EDF5F1' : '#E8F5E9' }]}>
+              <Text style={[styles.categoryText, { color: isIssue ? '#437C60' : '#2E7D32' }]}>{category}</Text>
+            </View>
+          </View>
 
         {/* --- INFO CARD --- */}
         <View style={[styles.mainCard, { backgroundColor: theme.card }]}>
@@ -123,33 +159,34 @@ export default function ScanningFinish() {
           
           <View style={styles.divider} />
 
-          {/* STATS GRID */}
-          <View style={styles.statsContainer}>
+          {/* Stat Row: Confidence & Severity */}
+          <View style={styles.statsRow}>
+            {/* Confidence Card */}
             <View style={styles.statBox}>
-              <View style={[styles.iconCircle, { backgroundColor: 'rgba(67, 124, 96, 0.1)' }]}>
-                <Ionicons name="shield-checkmark" size={26} color="#437C60" />
+              <View style={[styles.statIconWrapper, { backgroundColor: '#F2F9F5' }]}>
+                <Ionicons name="shield-checkmark" size={24} color="#437C60" />
               </View>
-              <Text style={[styles.statValue, { color: theme.text }]}>{currentPercentage}%</Text>
-              <Text style={[styles.statLabel, { color: theme.subText }]}>Confidence</Text>
+              <Text style={styles.statValue}>{confidence}</Text>
+              <Text style={styles.statLabel}>Confidence</Text>
             </View>
 
+            {/* Severity Card */}
             <View style={styles.statBox}>
-              <View style={[styles.iconCircle, { backgroundColor: 'rgba(255, 152, 0, 0.1)' }]}>
-                <Ionicons name="flame" size={26} color="#FF9800" />
+              <View style={[styles.statIconWrapper, { backgroundColor: '#FFF9F0' }]}>
+                <Ionicons name="flame" size={24} color="#F2994A" />
               </View>
-              <Text style={[styles.statValue, { color: theme.text }]}>Medium</Text>
-              <Text style={[styles.statLabel, { color: theme.subText }]}>Severity</Text>
+              <Text style={styles.statValue}>{severity}</Text>
+              <Text style={styles.statLabel}>Severity</Text>
             </View>
           </View>
 
-          {/* DESCRIPTION */}
-          <View style={[styles.descriptionBox, { backgroundColor: theme.background }]}>
-            <Text style={[styles.descriptionText, { color: theme.text }]}>
-              Early symptoms of bark cracking and unusual texture observed. This typically occurs due to nutrient imbalance or fungal infection.
-            </Text>
+          {/* Dynamic Description Box */}
+          <View style={styles.descriptionBox}>
+            <Text style={styles.descriptionText}>{description}</Text>
           </View>
-        </View>
 
+          {/* Action Button */}
+          {isIssue && (
         {/* --- ACTION BUTTONS --- */}
         <View style={styles.buttonWrapper}>
           <TouchableOpacity 
@@ -162,30 +199,38 @@ export default function ScanningFinish() {
 
           <View style={styles.secondaryRow}>
             <TouchableOpacity 
-               style={[styles.secondaryBtn, { backgroundColor: theme.card, borderColor: '#437C60' }]}
-               onPress={() => navigation.navigate('Scan')}
+              style={styles.actionButton}
+              onPress={() => navigation.navigate('TreatmentOptions', {
+                prediction,
+                category,
+                severity,
+                treatments: route.params?.treatments || []
+              })}
             >
-              <Ionicons name="camera-reverse-outline" size={22} color="#437C60" />
-              <Text style={styles.secondaryBtnTextGreen}>Retake</Text>
+              <Text style={styles.actionButtonText}>View Treatment Options</Text>
             </TouchableOpacity>
-
-            <TouchableOpacity 
-               style={[styles.secondaryBtn, { backgroundColor: theme.card, borderColor: '#EEE' }]}
-               onPress={() => navigation.navigate('Home')}
-            >
-              <Ionicons name="home-outline" size={22} color={theme.subText} />
-              <Text style={[styles.secondaryBtnText, { color: theme.subText }]}>Exit</Text>
-            </TouchableOpacity>
-          </View>
+          )}
         </View>
-        
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
+  imageHeader: {
+    position: 'absolute',
+    top: 0,
+    width: width,
+    height: height * 0.45,
+    zIndex: 1
+  },
+  mainImage: { width: '100%', height: '100%', resizeMode: 'cover' },
+  navOverlay: { width: '100%' },
+  topRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
   scrollContent: { paddingBottom: 40 },
   loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   loaderContent: { alignItems: 'center' },
@@ -211,75 +256,92 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between', 
     alignItems: 'center', 
     paddingHorizontal: 20,
-    paddingVertical: 15
+    marginTop: Platform.OS === 'android' ? 40 : 10,
   },
-  headerIcon: { width: 45, height: 45, borderRadius: 15, justifyContent: 'center', alignItems: 'center', elevation: 2 },
-  headerTitle: { fontSize: 18, fontWeight: 'bold' },
-
-  imageWrapper: { paddingHorizontal: 20, marginTop: 10, position: 'relative' },
-  resultImage: { width: '100%', height: 280, borderRadius: 30 },
+  navBtn: {
+    width: 44, height: 44,
+    borderRadius: 12,
+    backgroundColor: 'rgba(255,255,255,0.9)',
+    justifyContent: 'center', alignItems: 'center',
+    shadowColor: '#000', shadowOpacity: 0.1, shadowRadius: 5
+  },
+  overlayTitle: { color: '#333', fontSize: 17, fontWeight: '700' },
   statusBadge: {
     position: 'absolute',
-    bottom: 20,
-    right: 40,
-    backgroundColor: 'rgba(255, 255, 255, 0.95)',
-    flexDirection: 'row',
-    alignItems: 'center',
+    bottom: 25,
+    right: 20,
+    backgroundColor: '#FFF',
     paddingHorizontal: 15,
     paddingVertical: 8,
     borderRadius: 20,
-    ...Platform.select({ android: { elevation: 5 }, ios: { shadowOpacity: 0.2 } })
-  },
-  statusBadgeText: { fontSize: 12, fontWeight: 'bold', marginLeft: 5, color: '#000' },
-
-  mainCard: {
-    margin: 20,
-    borderRadius: 35,
-    padding: 25,
-    marginTop: -30,
-    elevation: 10,
-    shadowColor: '#000',
-    shadowOpacity: 0.1,
-    shadowRadius: 15,
-  },
-  diagnosisLabelRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  label: { fontSize: 11, color: '#999', fontWeight: 'bold', letterSpacing: 1.2 },
-  badgeSmall: { backgroundColor: 'rgba(67, 124, 96, 0.1)', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 10 },
-  badgeTextSmall: { color: '#437C60', fontSize: 10, fontWeight: 'bold' },
-  diseaseTitle: { fontSize: 26, fontWeight: '800', marginTop: 8 },
-  divider: { height: 1, backgroundColor: 'rgba(0,0,0,0.05)', marginVertical: 20 },
-  
-  statsContainer: { flexDirection: 'row', justifyContent: 'space-around', marginBottom: 25 },
-  statBox: { alignItems: 'center' },
-  iconCircle: { width: 55, height: 55, borderRadius: 20, justifyContent: 'center', alignItems: 'center', marginBottom: 10 },
-  statValue: { fontSize: 20, fontWeight: 'bold' },
-  statLabel: { fontSize: 12, marginTop: 2 },
-
-  descriptionBox: { padding: 18, borderRadius: 20 },
-  descriptionText: { textAlign: 'center', fontSize: 14, lineHeight: 22, fontStyle: 'italic' },
-
-  buttonWrapper: { paddingHorizontal: 20, marginTop: 10 },
-  primaryBtn: {
-    backgroundColor: '#437C60',
     flexDirection: 'row',
-    justifyContent: 'center',
     alignItems: 'center',
-    paddingVertical: 18,
-    borderRadius: 22,
-    elevation: 4,
+    shadowColor: '#000', shadowOpacity: 0.15, shadowRadius: 10,
+    elevation: 5
   },
-  primaryBtnText: { color: '#FFF', fontSize: 16, fontWeight: 'bold' },
-  
-  secondaryRow: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 15 },
-  secondaryBtn: {
-    width: '48%',
+  statusBadgeText: { fontSize: 13, fontWeight: '700', marginLeft: 6 },
+
+  scrollView: { flex: 1, zIndex: 2 },
+  scrollContent: {},
+  headerSpacer: { height: height * 0.4 },
+  resultCard: {
+    backgroundColor: '#FFF',
+    borderTopLeftRadius: 40,
+    borderTopRightRadius: 40,
+    padding: 30,
+    minHeight: height * 0.6,
+    shadowColor: '#000', shadowOpacity: 0.1, shadowRadius: 20,
+    elevation: 10
+  },
+  cardHeader: {
     flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingVertical: 16,
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: 25
+  },
+  primaryLabel: { fontSize: 12, fontWeight: '800', color: '#BDBDBD', letterSpacing: 1, marginBottom: 5 },
+  diagnosisTitle: { fontSize: 26, fontWeight: 'bold', color: '#1A1C1B' },
+  categoryTag: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 12 },
+  categoryText: { fontSize: 13, fontWeight: '700' },
+
+  statsRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 30
+  },
+  statBox: {
+    width: (width - 90) / 2,
+    alignItems: 'center'
+  },
+  statIconWrapper: {
+    width: 56, height: 56,
+    borderRadius: 18,
+    justifyContent: 'center', alignItems: 'center',
+    marginBottom: 12
+  },
+  statValue: { fontSize: 20, fontWeight: 'bold', color: '#1A1C1B', marginBottom: 2 },
+  statLabel: { fontSize: 12, color: '#BDBDBD', fontWeight: '600' },
+
+  descriptionBox: {
+    backgroundColor: '#F9F9F9',
     borderRadius: 20,
-    borderWidth: 1.5,
+    padding: 20,
+    marginBottom: 30
   },
-  secondaryBtnTextGreen: { color: '#437C60', fontWeight: 'bold', marginLeft: 8 },
-  secondaryBtnText: { fontWeight: 'bold', marginLeft: 8 }
+  descriptionText: {
+    fontSize: 15, color: '#4F4F4F',
+    lineHeight: 24, fontStyle: 'italic',
+    textAlign: 'center'
+  },
+
+  actionButton: {
+    backgroundColor: '#437C60',
+    borderRadius: 18,
+    height: 60,
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#437C60', shadowOpacity: 0.4, shadowRadius: 10, shadowOffset: { width: 0, height: 5 }
+  },
+  actionButtonText: { color: '#FFF', fontSize: 17, fontWeight: '700' }
 });

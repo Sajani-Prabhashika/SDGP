@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
   SafeAreaView,
   View,
@@ -13,10 +13,12 @@ import {
   Platform,
   StatusBar
 } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Calendar } from 'react-native-calendars';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { useNavigation } from '@react-navigation/native';
 import { useTheme } from '../ThemeContext';
+import { BASE_URL } from '../config';
 
 const { width } = Dimensions.get('window');
 
@@ -31,6 +33,28 @@ export default function CalendarScreen() {
   
   const [remName, setRemName] = useState('');
   const [remDesc, setRemDesc] = useState('');
+
+  const fetchReminders = async () => {
+    try {
+      const storedUid = await AsyncStorage.getItem('user_uid') || 'test_uid_123';
+      const res = await fetch(`${BASE_URL}/api/get-reminders/${storedUid}`);
+      const data = await res.json();
+      if (res.ok) {
+        // Transform the array from backend into the { "YYYY-MM-DD": { name, desc } } object expected by the UI
+        const transformed: any = {};
+        data.forEach((item: any) => {
+          transformed[item.date] = { name: item.name, desc: item.description };
+        });
+        setReminders(transformed);
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  useEffect(() => {
+    fetchReminders();
+  }, []);
 
   const markedDates = useMemo(() => {
     let marked: any = {};
@@ -50,7 +74,7 @@ export default function CalendarScreen() {
     return marked;
   }, [selectedDate, reminders]);
 
-  const handleSaveReminder = () => {
+  const handleSaveReminder = async () => {
     if (!selectedDate) {
       Alert.alert("Date Required", "Please tap a date on the calendar first.");
       return;
@@ -61,6 +85,30 @@ export default function CalendarScreen() {
       return;
     }
 
+    try {
+      const storedUid = await AsyncStorage.getItem('user_uid') || 'test_uid_123';
+      const res = await fetch(`${BASE_URL}/api/reminders`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          uid: storedUid,
+          reminder_name: remName,
+          description: remDesc,
+          date: selectedDate
+        })
+      });
+      if (res.ok) {
+        Alert.alert("Saved", `Reminder set for ${selectedDate}`);
+        setRemName('');
+        setRemDesc('');
+        fetchReminders(); // Refresh the list from backend
+      } else {
+        Alert.alert("Error", "Failed to save reminder.");
+      }
+    } catch (e) {
+      console.error(e);
+      Alert.alert("Network Error", "Could not connect to the server.");
+    }
     const newReminder = {
       id: Date.now().toString(), // Unique ID for mapping
       name: remName.trim(),
