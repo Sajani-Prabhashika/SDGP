@@ -11,9 +11,10 @@ from PIL import Image
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2' # Suppress TF warnings
 import tensorflow as tf
 import firebase_admin
-from firebase_admin import credentials, firestore, auth
+from firebase_admin import credentials, firestore, auth, messaging
 from datetime import datetime, timedelta, timezone
 from twilio.rest import Client
+import uuid
 
 #--
 
@@ -96,6 +97,10 @@ def check_and_send_reminders():
 
 reminder_thread = threading.Thread(target=check_and_send_reminders, daemon=True)
 reminder_thread.start()
+
+# Firebase Web API Key (Used for Sign-In with Password)
+# You can find this in Firebase Console -> Project Settings -> General -> Web API Key
+FIREBASE_WEB_API_KEY = 'AIzaSyD8xyi4veuUY9HWBU0ty1oCnvz7X9buYdc'
 
 # --- ROUTES ---
 
@@ -307,3 +312,34 @@ def signin():
     if not email or not password:
         return jsonify({"error": "Email and password are required"}), 400
 
+    # Call Firebase Identity Toolkit REST API to verify password
+    url = f"https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key={FIREBASE_WEB_API_KEY}"
+    payload = {
+        "email": email,
+        "password": password,
+        "returnSecureToken": True
+    }
+    
+    try:
+        req = requests.post(url, json=payload)
+        resp_data = req.json()
+        
+        if req.status_code == 200:
+            uid = resp_data.get('localId')
+            
+            # Check if email is verified
+            user_record = auth.get_user(uid)
+            if not user_record.email_verified:
+                return jsonify({"error": "Please verify your email before signing in."}), 403
+                
+            id_token = resp_data.get('idToken')
+            return jsonify({
+                "message": "Signed in successfully",
+                "uid": uid,
+                "idToken": id_token
+            }), 200
+        else:
+            error_message = resp_data.get('error', {}).get('message', 'Unknown Error')
+            return jsonify({"error": error_message}), 401
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
