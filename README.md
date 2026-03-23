@@ -21,6 +21,7 @@ It also includes a geospatial alert system to notify nearby farmers about diseas
 #### Machine Learning
 - TensorFlow (CNN model)
 - NumPy (data processing)
+- Keras
 
 #### Database & Authentication
 - Firebase Admin SDK
