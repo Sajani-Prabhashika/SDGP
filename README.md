@@ -48,6 +48,7 @@ It also includes a geospatial alert system to notify nearby farmers about diseas
 git clone https://github.com/your-username/your-repo-name.git
 ```
 
+### Set up Frontend
 ### Setting Up React Native Environment
 Follow these steps to set up React Native on your system.
 
@@ -64,7 +65,8 @@ Make sure you have installed:
 npm install -g expo-cli
 ```
 
-# Teera Backend
+# Set up Backend
+### Setting up Flask environment
 
 This is the Flask-based backend for the Teera application, providing APIs for user authentication, community posts, plant disease analysis, and notifications.
 
