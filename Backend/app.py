@@ -580,3 +580,8 @@ def logout():
     # In a stateless Firebase system, logout is mostly handled by the frontend 
     # (deleting the ID token). This endpoint exists to provide a clear logout sign-off.
     return jsonify({"message": "Successfully logged out"}), 200
+
+if __name__ == '__main__':
+    # Use PORT from environment variable (required by Render) or default to 5000
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host='0.0.0.0', port=port, debug=False)
