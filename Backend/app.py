@@ -574,3 +574,9 @@ def chat():
             reply = "I'm having a little trouble connecting to my AI brain, but I'm here to help! Try asking about 'watering', 'sunlight', or use the 'Scan' feature to check for diseases."
             
         return jsonify({"reply": reply}), 200
+
+@app.route('/api/logout', methods=['POST'])
+def logout():
+    # In a stateless Firebase system, logout is mostly handled by the frontend 
+    # (deleting the ID token). This endpoint exists to provide a clear logout sign-off.
+    return jsonify({"message": "Successfully logged out"}), 200
