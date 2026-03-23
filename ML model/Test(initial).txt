@@ -6,7 +6,7 @@ from tensorflow.keras import layers, models
 from tensorflow.keras.preprocessing.image import ImageDataGenerator
 from google.colab import drive
 drive.mount('/content/drive')
-path = "/content/drive/MyDrive/Diseases"
+path = "/content/drive/MyDrive/Diseases"               #This path depends on the drive folder you have
 print("Classes:", os.listdir(path))
 **Data Preprocessing**
 IMG_SIZE = (224, 224)
