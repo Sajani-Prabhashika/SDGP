@@ -16,7 +16,6 @@ import { useNavigation } from '@react-navigation/native';
 import { launchImageLibrary } from 'react-native-image-picker'; // For Gallery
 import { useTheme } from '../ThemeContext'; 
 import { BASE_URL } from '../config';
-
 const EditProfileScreen = () => {
   const navigation = useNavigation<any>();
   const { theme, isDark } = useTheme(); // Global theme state

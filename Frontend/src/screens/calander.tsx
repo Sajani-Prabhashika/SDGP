@@ -27,7 +27,9 @@ export default function CalendarScreen() {
   const navigation = useNavigation<any>();
   
   const [selectedDate, setSelectedDate] = useState('');
-  const [reminders, setReminders] = useState<any>({}); 
+  // reminders is now an object where each key is a date string 
+  // and the value is an ARRAY of reminder objects.
+  const [reminders, setReminders] = useState<Record<string, any[]>>({}); 
   
   const [remName, setRemName] = useState('');
   const [remDesc, setRemDesc] = useState('');
@@ -57,7 +59,10 @@ export default function CalendarScreen() {
   const markedDates = useMemo(() => {
     let marked: any = {};
     Object.keys(reminders).forEach((date) => {
-      marked[date] = { marked: true, dotColor: '#2E7D32' };
+      // If the array for this date has items, show the dot
+      if (reminders[date].length > 0) {
+        marked[date] = { marked: true, dotColor: '#2E7D32' };
+      }
     });
     if (selectedDate) {
       marked[selectedDate] = {
@@ -71,11 +76,12 @@ export default function CalendarScreen() {
 
   const handleSaveReminder = async () => {
     if (!selectedDate) {
-      Alert.alert("Error", "Please select a date.");
+      Alert.alert("Date Required", "Please tap a date on the calendar first.");
       return;
     }
+
     if (!remName.trim()) {
-      Alert.alert("Error", "Please enter a reminder title.");
+      Alert.alert("Title Required", "Please enter a name for this reminder.");
       return;
     }
 
@@ -103,9 +109,28 @@ export default function CalendarScreen() {
       console.error(e);
       Alert.alert("Network Error", "Could not connect to the server.");
     }
+    const newReminder = {
+      id: Date.now().toString(), // Unique ID for mapping
+      name: remName.trim(),
+      desc: remDesc.trim(),
+    };
+
+    setReminders((prev) => {
+      // Get existing array for this date, or start a new one
+      const existingForDate = prev[selectedDate] || [];
+      return {
+        ...prev,
+        [selectedDate]: [...existingForDate, newReminder],
+      };
+    });
+
+    // Clear inputs
+    setRemName('');
+    setRemDesc('');
+    // Note: We keep selectedDate so user can add another task to the same day quickly
+    Alert.alert("Success", `Reminder added for ${selectedDate}`);
   };
 
-  // Hardcode background to match your profile screen dark mode perfectly
   const screenBgColor = isDark ? '#121212' : '#F0F9F1';
 
   return (
@@ -115,9 +140,12 @@ export default function CalendarScreen() {
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         style={{ flex: 1 }}
       >
-        <ScrollView contentContainerStyle={{ alignItems: 'center', paddingBottom: 40 }} showsVerticalScrollIndicator={false}>
+        <ScrollView 
+          contentContainerStyle={{ alignItems: 'center', paddingBottom: 40 }} 
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+        >
           
-          {/* --- Header with Back Button --- */}
           <View style={styles.headerContainer}>
             <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
               <Ionicons name="arrow-back" size={26} color={theme.text} />
@@ -125,9 +153,8 @@ export default function CalendarScreen() {
             
             <View style={styles.headerTextContainer}>
               <Text style={[styles.title, { color: theme.text }]}>Set Reminder</Text>
-              <Text style={[styles.subtitle, { color: theme.subText }]}>Select a date and enter details</Text>
+              <Text style={[styles.subtitle, { color: theme.subText }]}>Add multiple tasks per day</Text>
             </View>
-            
             <View style={{ width: 26 }} /> 
           </View>
 
@@ -150,7 +177,7 @@ export default function CalendarScreen() {
 
           <View style={styles.formContainer}>
             <Text style={[styles.label, { color: theme.text }]}>
-              Selected: <Text style={{ color: '#2E7D32' }}>{selectedDate || 'Select a date'}</Text>
+              Selected: <Text style={{ color: '#2E7D32' }}>{selectedDate || 'Tap a date'}</Text>
             </Text>
             
             <TextInput
@@ -171,8 +198,11 @@ export default function CalendarScreen() {
               placeholderTextColor={theme.subText}
             />
 
-            <TouchableOpacity style={styles.button} onPress={handleSaveReminder}>
-              <Text style={styles.buttonText}>Save Reminder</Text>
+            <TouchableOpacity 
+              style={[styles.button, { opacity: (!selectedDate || !remName.trim()) ? 0.7 : 1 }]} 
+              onPress={handleSaveReminder}
+            >
+              <Text style={styles.buttonText}>Add Reminder</Text>
             </TouchableOpacity>
           </View>
 
@@ -184,15 +214,22 @@ export default function CalendarScreen() {
                 <Text style={[styles.emptyText, { color: theme.subText }]}>No reminders set yet.</Text>
               </View>
             ) : (
-              /* --- The Fixed Line is Below! No extra bracket --- */
+              // Sort dates chronologically
               Object.keys(reminders).sort().map((date) => (
-                <View key={date} style={[styles.reminderCard, { backgroundColor: theme.card, borderColor: theme.border }]}>
-                  <View style={styles.cardHeader}>
-                    <Ionicons name="calendar-outline" size={16} color="#2E7D32" />
-                    <Text style={[styles.cardDate, { color: theme.subText }]}>{date}</Text>
+                <View key={date}>
+                  {/* Date Header for each group of reminders */}
+                  <View style={styles.dateGroupHeader}>
+                    <Ionicons name="calendar-outline" size={14} color="#2E7D32" />
+                    <Text style={[styles.dateGroupText, { color: theme.subText }]}>{date}</Text>
                   </View>
-                  <Text style={[styles.cardName, { color: theme.text }]}>{reminders[date].name}</Text>
-                  {reminders[date].desc ? <Text style={[styles.cardDesc, { color: theme.subText }]}>{reminders[date].desc}</Text> : null}
+                  
+                  {/* Map through the array of reminders for this specific date */}
+                  {reminders[date].map((item: any) => (
+                    <View key={item.id} style={[styles.reminderCard, { backgroundColor: theme.card, borderColor: theme.border }]}>
+                      <Text style={[styles.cardName, { color: theme.text }]}>{item.name}</Text>
+                      {item.desc ? <Text style={[styles.cardDesc, { color: theme.subText }]}>{item.desc}</Text> : null}
+                    </View>
+                  ))}
                 </View>
               ))
             )}
@@ -206,56 +243,25 @@ export default function CalendarScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  headerContainer: { 
-    flexDirection: 'row', 
-    alignItems: "center", 
-    justifyContent: 'space-between',
-    width: '100%',
-    paddingHorizontal: 20,
-    marginTop: 25, 
-    marginBottom: 20 
-  },
+  headerContainer: { flexDirection: 'row', alignItems: "center", justifyContent: 'space-between', width: '100%', paddingHorizontal: 20, marginTop: 25, marginBottom: 20 },
   backButton: { padding: 5 },
   headerTextContainer: { alignItems: 'center' },
   title: { fontSize: 22, fontWeight: "700" },
   subtitle: { fontSize: 13, marginTop: 4 },
-  calendarWrapper: {
-    width: width - 30,
-    borderRadius: 20,
-    borderWidth: 1,
-    overflow: 'hidden',
-    elevation: 4,
-    shadowColor: '#000',
-    shadowOpacity: 0.1,
-    shadowRadius: 10,
-  },
+  calendarWrapper: { width: width - 30, borderRadius: 20, borderWidth: 1, overflow: 'hidden', elevation: 4 },
   formContainer: { width: '100%', paddingHorizontal: 20, marginTop: 25 },
   label: { fontSize: 15, fontWeight: "700", marginBottom: 12 },
   input: { borderRadius: 12, padding: 15, fontSize: 15, borderWidth: 1, marginBottom: 12 },
-  textArea: { height: 90, textAlignVertical: 'top' },
-  button: {
-    backgroundColor: "#2E7D32", 
-    paddingVertical: 16,
-    borderRadius: 15,
-    alignItems: "center",
-    marginTop: 5,
-    elevation: 3,
-  },
+  textArea: { height: 80, textAlignVertical: 'top' },
+  button: { backgroundColor: "#2E7D32", paddingVertical: 16, borderRadius: 15, alignItems: "center", marginTop: 5 },
   buttonText: { color: "#FFF", fontSize: 16, fontWeight: "700" },
   remindersListView: { width: '100%', paddingHorizontal: 20, marginTop: 30 },
   listTitle: { fontSize: 18, fontWeight: "700", marginBottom: 15 },
-  reminderCard: {
-    padding: 16,
-    borderRadius: 15,
-    borderLeftWidth: 5,
-    borderLeftColor: "#2E7D32", 
-    borderWidth: 1,
-    marginBottom: 12,
-  },
-  cardHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 6 },
-  cardDate: { marginLeft: 6, fontSize: 13, fontWeight: "600" },
-  cardName: { fontSize: 16, fontWeight: "700" },
-  cardDesc: { fontSize: 14, marginTop: 4, lineHeight: 20 },
+  dateGroupHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 8, marginTop: 10 },
+  dateGroupText: { marginLeft: 6, fontSize: 13, fontWeight: "bold", textTransform: 'uppercase' },
+  reminderCard: { padding: 14, borderRadius: 12, borderLeftWidth: 4, borderLeftColor: "#2E7D32", borderWidth: 1, marginBottom: 8 },
+  cardName: { fontSize: 16, fontWeight: "600" },
+  cardDesc: { fontSize: 14, marginTop: 2 },
   emptyContainer: { alignItems: 'center', marginTop: 20 },
   emptyText: { marginTop: 10, fontSize: 14, fontStyle: 'italic' }
 });
