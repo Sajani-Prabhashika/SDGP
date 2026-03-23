@@ -515,3 +515,19 @@ def save_reminder():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+@app.route('/api/get-reminders/<uid>', methods=['GET'])
+def get_reminders(uid):
+    try:
+        reminders_ref = db.collection('users').document(uid).collection('reminders')
+        # Order by date so the most recent ones appear first in "Upcoming Tasks"
+        docs = reminders_ref.order_by('date').stream()
+        
+        reminders_list = []
+        for doc in docs:
+            data = doc.to_dict()
+            data['id'] = doc.id
+            reminders_list.append(data)
+            
+        return jsonify(reminders_list), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
