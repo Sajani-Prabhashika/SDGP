@@ -1,3 +1,4 @@
+#These dependenece are need to make the python based environment to train the model
 import pandas as pd
 import os
 import tensorflow as tf
