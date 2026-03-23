@@ -531,3 +531,46 @@ def get_reminders(uid):
         return jsonify(reminders_list), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
+@app.route('/api/chat', methods=['POST'])
+def chat():
+    data = request.json
+    user_msg = data.get('message', '')
+    
+    if not user_msg:
+        return jsonify({"error": "No message provided"}), 400
+        
+    try:
+        import urllib.parse
+        encoded_msg = urllib.parse.quote(user_msg)
+        api_url = f"https://api.popcat.xyz/chatbot?msg={encoded_msg}&owner=Teera&botname=TeeraBot"
+        
+        # Added timeout to prevent hanging the server
+        response = requests.get(api_url, timeout=7)
+        
+        if response.status_code == 200:
+            bot_reply = response.json().get('response', 'Sorry, I could not understand that.')
+            return jsonify({"reply": bot_reply}), 200
+        else:
+            # Fallback to local rules if API is unreachable
+            raise Exception("API status not 200")
+            
+    except Exception as e:
+        # --- Local Rule-Based Fallback ---
+        msg_lower = user_msg.lower()
+        
+        # Simple keyword-based responses for plant care
+        if any(kw in msg_lower for kw in ['hi', 'hello', 'hey', 'ayubowan']):
+            reply = "Ayubowan! I'm Teera. How can I help you with your plants today?"
+        elif any(kw in msg_lower for kw in ['water', 'watering']):
+            reply = "Most plants prefer the soil to be moist but not soggy. Check the top inch of soil; if it's dry, it's time to water!"
+        elif any(kw in msg_lower for kw in ['disease', 'sick', 'leaf', 'spot']):
+            reply = "If you notice spots or yellowing, use my 'Scan' feature! It can identify common diseases like Rough Bark Disease."
+        elif any(kw in msg_lower for kw in ['cinnamon', 'tree']):
+            reply = "Cinnamon trees thrive in wet, tropical climates with plenty of sunlight and well-drained soil."
+        elif any(kw in msg_lower for kw in ['sunlight', 'sun', 'light']):
+            reply = "Most indoor plants need bright, indirect sunlight. If leaves are turning brown, they might be getting too much direct sun."
+        else:
+            reply = "I'm having a little trouble connecting to my AI brain, but I'm here to help! Try asking about 'watering', 'sunlight', or use the 'Scan' feature to check for diseases."
+            
+        return jsonify({"reply": reply}), 200
