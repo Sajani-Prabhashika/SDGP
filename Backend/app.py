@@ -489,3 +489,29 @@ def get_notifications(uid):
         return jsonify(notifications), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
+# calender and reminders
+@app.route('/api/reminders', methods=['POST'])
+def save_reminder():
+    data = request.json
+    uid = data.get('uid')
+    reminder_name = data.get('reminder_name')
+    description = data.get('description')
+    date = data.get('date') # Expected in ISO format or YYYY-MM-DD
+
+    if not all([uid, reminder_name, date]):
+        return jsonify({"error": "Missing required fields"}), 400
+
+    try:
+        reminder_ref = db.collection('users').document(uid).collection('reminders').document()
+        reminder_ref.set({
+            "name": reminder_name,
+            "description": description or "",
+            "date": date,
+            "created_at": firestore.SERVER_TIMESTAMP,
+            "notified": False
+        })
+        return jsonify({"message": "Reminder saved successfully", "id": reminder_ref.id}), 201
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
