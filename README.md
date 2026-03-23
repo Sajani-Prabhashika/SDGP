@@ -11,6 +11,7 @@ It also includes a geospatial alert system to notify nearby farmers about diseas
 - React Native
 - Typescript
 - Expo
+##Used code editor - Visual Studio
 
 ### Backend
 
