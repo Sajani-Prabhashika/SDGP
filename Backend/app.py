@@ -11,9 +11,10 @@ from PIL import Image
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2' # Suppress TF warnings
 import tensorflow as tf
 import firebase_admin
-from firebase_admin import credentials, firestore, auth
+from firebase_admin import credentials, firestore, auth, messaging
 from datetime import datetime, timedelta, timezone
 from twilio.rest import Client
+import uuid
 
 #--
 
@@ -96,6 +97,10 @@ def check_and_send_reminders():
 
 reminder_thread = threading.Thread(target=check_and_send_reminders, daemon=True)
 reminder_thread.start()
+
+# Firebase Web API Key (Used for Sign-In with Password)
+# You can find this in Firebase Console -> Project Settings -> General -> Web API Key
+FIREBASE_WEB_API_KEY = 'AIzaSyD8xyi4veuUY9HWBU0ty1oCnvz7X9buYdc'
 
 # --- ROUTES ---
 
@@ -297,3 +302,286 @@ def handle_profile(uid):
             return jsonify({"message": "Profile updated successfully"}), 200
         except Exception as e:
             return jsonify({"error": str(e)}), 500
+
+@app.route('/api/signin', methods=['POST'])
+def signin():
+    data = request.json
+    email = data.get('email')
+    password = data.get('password')
+
+    if not email or not password:
+        return jsonify({"error": "Email and password are required"}), 400
+
+    # Call Firebase Identity Toolkit REST API to verify password
+    url = f"https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key={FIREBASE_WEB_API_KEY}"
+    payload = {
+        "email": email,
+        "password": password,
+        "returnSecureToken": True
+    }
+    
+    try:
+        req = requests.post(url, json=payload)
+        resp_data = req.json()
+        
+        if req.status_code == 200:
+            uid = resp_data.get('localId')
+            
+            # Check if email is verified
+            user_record = auth.get_user(uid)
+            if not user_record.email_verified:
+                return jsonify({"error": "Please verify your email before signing in."}), 403
+                
+            id_token = resp_data.get('idToken')
+            return jsonify({
+                "message": "Signed in successfully",
+                "uid": uid,
+                "idToken": id_token
+            }), 200
+        else:
+            error_message = resp_data.get('error', {}).get('message', 'Unknown Error')
+            return jsonify({"error": error_message}), 401
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route('/api/analyze', methods=['POST'])
+def analyze_leaf():
+    if not disease_model:
+        return jsonify({"error": "ML model is not loaded on the server."}), 500
+
+    if 'file' not in request.files:
+        return jsonify({"error": "No file part in the request"}), 400
+        
+    file = request.files['file']
+    if file.filename == '':
+        return jsonify({"error": "No selected file"}), 400
+
+    try:
+        # 1. Read the image
+        img_bytes = file.read()
+        img = Image.open(io.BytesIO(img_bytes)).convert('RGB')
+        
+        # 2. Resize to 224x224 (required by MobileNetV2)
+        img = img.resize((224, 224))
+        
+        # 3. Convert to numpy array and preprocess
+        img_array = np.array(img)
+        # MobileNetV2 uses preprocess_input which maps 0-255 to -1 to 1
+        img_array = tf.keras.applications.mobilenet_v2.preprocess_input(img_array)
+        
+        # Add batch dimension
+        img_batch = np.expand_dims(img_array, axis=0)
+        
+        # 4. Predict
+        predictions = disease_model.predict(img_batch, verbose=0)
+        
+        # The output is [1, 2] probability array
+        confidence_scores = predictions[0]
+        predicted_class_idx = int(np.argmax(confidence_scores))
+        confidence_percentage = float(np.max(confidence_scores)) * 100
+        
+        # 5. Map to UI format
+        # Index 0 = Healthy, Index 1 = Rough Bark Disease
+        if predicted_class_idx == 0:
+            result = {
+                "diagnosis": "Healthy",
+                "confidence": f"{int(confidence_percentage)}%",
+                "severity": "None",
+                "description": "The leaf appears healthy with no visible signs of disease."
+            }
+        else:
+            result = {
+                "diagnosis": "Rough Bark Disease",
+                "confidence": f"{int(confidence_percentage)}%",
+                "severity": "Medium",
+                "description": "Early symptoms of bark cracking or infection observed. Recommended to isolate the plant and treat accordingly."
+            }
+            
+            # Extract location and uploader info from form data
+            loc_name = request.form.get('location_name')
+            uploader_uid = request.form.get('uid')
+            
+            # If we have a location name, trigger alerts to others in the same area
+            if loc_name:
+                loc_name_lower = loc_name.strip().lower()
+                
+                users_ref = db.collection('users')
+                all_users = users_ref.stream()
+                
+                batch = db.batch()
+                notifications_created = 0
+                
+                for user_doc in all_users:
+                    if user_doc.id == uploader_uid:
+                        continue # Don't alert the person who just uploaded it
+                        
+                    user_data = user_doc.to_dict()
+                    user_loc = user_data.get('location_name')
+                    
+                    if user_loc and user_loc.strip().lower() == loc_name_lower:
+                        # Create a notification in Firestore
+                        notif_ref = db.collection('notifications').document()
+                        batch.set(notif_ref, {
+                            "user_uid": user_doc.id,
+                            "type": "disease_alert",
+                            "title": "Disease Alert in Your Area",
+                            "message": f"Rough Bark Disease was detected in {user_loc}. Please check your plants.",
+                            "location_name": user_loc,
+                            "created_at": firestore.SERVER_TIMESTAMP,
+                            "read": False
+                        })
+                        
+                        # Trigger FCM Push Notification
+                        fcm_token = user_data.get('fcm_token')
+                        if fcm_token:
+                            try:
+                                message = messaging.Message(
+                                    notification=messaging.Notification(
+                                        title="Disease Alert in Your Area",
+                                        body=f"Rough Bark Disease was detected in {user_loc}. Please check your plants."
+                                    ),
+                                    token=fcm_token,
+                                )
+                                messaging.send(message)
+                            except Exception as e:
+                                print(f"Failed to send FCM to {user_doc.id}: {e}")
+                                
+                        notifications_created += 1
+                
+                if notifications_created > 0:
+                    batch.commit()
+
+            
+        return jsonify(result), 200
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+#Notifications page 
+
+@app.route('/api/notifications/<uid>', methods=['GET'])
+def get_notifications(uid):
+    try:
+        notifs_ref = db.collection('notifications')
+        # Fetch without order_by to avoid needing a composite index
+        query = notifs_ref.where('user_uid', '==', uid).limit(50)
+        docs = query.stream()
+        
+        notifications = []
+        for doc in docs:
+            data = doc.to_dict()
+            data['id'] = doc.id
+            notifications.append(data)
+            
+        # Sort in Python by 'created_at' descending (newest first)
+        notifications.sort(key=lambda x: str(x.get('created_at', '')), reverse=True)
+            
+        # Format timestamps for JSON response
+        for n in notifications:
+            if 'created_at' in n and n['created_at']:
+                try:
+                    n['created_at'] = n['created_at'].isoformat()
+                except AttributeError:
+                    n['created_at'] = str(n['created_at'])
+
+        return jsonify(notifications), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+# calender and reminders
+@app.route('/api/reminders', methods=['POST'])
+def save_reminder():
+    data = request.json
+    uid = data.get('uid')
+    reminder_name = data.get('reminder_name')
+    description = data.get('description')
+    date = data.get('date') # Expected in ISO format or YYYY-MM-DD
+
+    if not all([uid, reminder_name, date]):
+        return jsonify({"error": "Missing required fields"}), 400
+
+    try:
+        reminder_ref = db.collection('users').document(uid).collection('reminders').document()
+        reminder_ref.set({
+            "name": reminder_name,
+            "description": description or "",
+            "date": date,
+            "created_at": firestore.SERVER_TIMESTAMP,
+            "notified": False
+        })
+        return jsonify({"message": "Reminder saved successfully", "id": reminder_ref.id}), 201
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@app.route('/api/get-reminders/<uid>', methods=['GET'])
+def get_reminders(uid):
+    try:
+        reminders_ref = db.collection('users').document(uid).collection('reminders')
+        # Order by date so the most recent ones appear first in "Upcoming Tasks"
+        docs = reminders_ref.order_by('date').stream()
+        
+        reminders_list = []
+        for doc in docs:
+            data = doc.to_dict()
+            data['id'] = doc.id
+            reminders_list.append(data)
+            
+        return jsonify(reminders_list), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@app.route('/api/chat', methods=['POST'])
+def chat():
+    data = request.json
+    user_msg = data.get('message', '')
+    
+    if not user_msg:
+        return jsonify({"error": "No message provided"}), 400
+        
+    try:
+        import urllib.parse
+        encoded_msg = urllib.parse.quote(user_msg)
+        api_url = f"https://api.popcat.xyz/chatbot?msg={encoded_msg}&owner=Teera&botname=TeeraBot"
+        
+        # Added timeout to prevent hanging the server
+        response = requests.get(api_url, timeout=7)
+        
+        if response.status_code == 200:
+            bot_reply = response.json().get('response', 'Sorry, I could not understand that.')
+            return jsonify({"reply": bot_reply}), 200
+        else:
+            # Fallback to local rules if API is unreachable
+            raise Exception("API status not 200")
+            
+    except Exception as e:
+        # --- Local Rule-Based Fallback ---
+        msg_lower = user_msg.lower()
+        
+        # Simple keyword-based responses for plant care
+        if any(kw in msg_lower for kw in ['hi', 'hello', 'hey', 'ayubowan']):
+            reply = "Ayubowan! I'm Teera. How can I help you with your plants today?"
+        elif any(kw in msg_lower for kw in ['water', 'watering']):
+            reply = "Most plants prefer the soil to be moist but not soggy. Check the top inch of soil; if it's dry, it's time to water!"
+        elif any(kw in msg_lower for kw in ['disease', 'sick', 'leaf', 'spot']):
+            reply = "If you notice spots or yellowing, use my 'Scan' feature! It can identify common diseases like Rough Bark Disease."
+        elif any(kw in msg_lower for kw in ['cinnamon', 'tree']):
+            reply = "Cinnamon trees thrive in wet, tropical climates with plenty of sunlight and well-drained soil."
+        elif any(kw in msg_lower for kw in ['sunlight', 'sun', 'light']):
+            reply = "Most indoor plants need bright, indirect sunlight. If leaves are turning brown, they might be getting too much direct sun."
+        else:
+            reply = "I'm having a little trouble connecting to my AI brain, but I'm here to help! Try asking about 'watering', 'sunlight', or use the 'Scan' feature to check for diseases."
+            
+        return jsonify({"reply": reply}), 200
+
+@app.route('/api/logout', methods=['POST'])
+def logout():
+    # In a stateless Firebase system, logout is mostly handled by the frontend 
+    # (deleting the ID token). This endpoint exists to provide a clear logout sign-off.
+    return jsonify({"message": "Successfully logged out"}), 200
+
+if __name__ == '__main__':
+    # Use PORT from environment variable (required by Render) or default to 5000
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host='0.0.0.0', port=port, debug=False)
