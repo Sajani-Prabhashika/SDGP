@@ -457,3 +457,35 @@ def analyze_leaf():
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
+
+#Notifications page 
+
+@app.route('/api/notifications/<uid>', methods=['GET'])
+def get_notifications(uid):
+    try:
+        notifs_ref = db.collection('notifications')
+        # Fetch without order_by to avoid needing a composite index
+        query = notifs_ref.where('user_uid', '==', uid).limit(50)
+        docs = query.stream()
+        
+        notifications = []
+        for doc in docs:
+            data = doc.to_dict()
+            data['id'] = doc.id
+            notifications.append(data)
+            
+        # Sort in Python by 'created_at' descending (newest first)
+        notifications.sort(key=lambda x: str(x.get('created_at', '')), reverse=True)
+            
+        # Format timestamps for JSON response
+        for n in notifications:
+            if 'created_at' in n and n['created_at']:
+                try:
+                    n['created_at'] = n['created_at'].isoformat()
+                except AttributeError:
+                    n['created_at'] = str(n['created_at'])
+
+        return jsonify(notifications), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
