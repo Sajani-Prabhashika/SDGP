@@ -108,6 +108,8 @@ Install the required Python packages using the provided `requirements.txt`:
 ```powershell
 pip install -r requirements.txt
 ```
+Install Flask
+''pip install flask'' or ''python -m pip install flask''
 
 ---
 
@@ -126,7 +128,7 @@ The server will run on `http://localhost:5000` by default.
 
 From the project root (`TEERA/`), you can use the `start_servers.py` script to start both the backend and frontend simultaneously. This script also automatically updates the frontend configuration with your local IP address.
 
-```powershell
+```powershell  
 python start_servers.py
 ```
 
